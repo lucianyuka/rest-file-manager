@@ -61,5 +61,7 @@ A PHP file manager with a REST interface
     * example: `{"lucian": "cf-rf-uf-df-cu-ru-uu-du", "mohamed": "cf-xx-xx-xx-cu-xx-xx-xx"}`
 * no framework
 * 1-3 php files max (index, functions, class)
-* timeframe: 
+* timeframe: 24 hours
+
+(Could we use packages like vlucas/phpdotenv?)
 
