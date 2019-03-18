@@ -28,7 +28,7 @@ A PHP file manager with a REST interface
         * `path`: a string path to the folder to be deleted
     * POST /add-user - [username,permissions_string] - adds the user and responds with an API key
         * `username`: the new username
-        * `permissions_string`: cf-rf-uf-df-cu-ru-uu-du, if no permissions will be marked with xx, eg: cf-xx-xx-xx-cu-xx-xx-xx will only allow creation of files, folders and users
+        * `permissions_string`: cf-rf-uf-df-cu-ru-uu-du, if no permissions then it will be marked with xx, eg: cf-xx-xx-xx-cu-xx-xx-xx will only allow creation of files, folders and users
             * cf: create file/folder
                 * POST /upload - [file,path]
                 * POST /copy - [source,dest]
