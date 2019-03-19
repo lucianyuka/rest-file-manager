@@ -37,7 +37,7 @@ A PHP file manager with a REST interface
                 * GET /info/{path}
             * uf: create file/folder
                 * POST /rename - [old_file_path,new_file_path]
-            * df: create file/folder
+            * df: delete file/folder
                 * POST /delete - [path]
                 * POST /force-delete - [path]
             * cu: create user
@@ -53,7 +53,7 @@ A PHP file manager with a REST interface
     * GET /users - get users list
     * POST /update-user - [username,permissions_string] - update the user
     * POST /delete-user - [username] - deletes the user
-    
+
 ## limitations
 
 * 5.4 <= PHP <= 7.3
