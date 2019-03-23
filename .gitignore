@@ -1,10 +1,11 @@
 # Editors
 *.sublime-*
 .idea
-
+*.xlsx
 
 # Third-Party
 /vendor
+.env
 /.history
 
 # Config
