@@ -28,118 +28,117 @@ class Main
 
     public function showInfo($data)
     {
-
-        if ($this->user->hasThePerm($this->username, "read-file")) {
-            $this->response->setStatus('200');
-            $this->response->setUserCred($this->username);
-            $this->response->setContent($data);
-            $this->response->finish();
-        } else {
+        if (!$this->user->hasThePerm($this->username, "read-file")) {
             $this->response->setStatus('401');
             $this->response->setContent("no authorization");
             $this->response->finish();
-
         }
+
+        $this->response->setStatus('200');
+        $this->response->setContent("OK");
+        $this->response->finish();
+
+
 
     }
 
     public function upload()
     {
-
-        if ($this->user->hasThePerm($this->username, "create-file")) {
-            $this->response->setStatus('200');
-            $this->response->setContent("OK");
-            $this->response->finish();
-        } else {
+        if (!$this->user->hasThePerm($this->username, "create-file")) {
             $this->response->setStatus('401');
             $this->response->setContent("no authorization");
             $this->response->finish();
-
         }
+
+        $this->response->setStatus('200');
+        $this->response->setContent("OK");
+        $this->response->finish();
+
+
     }
 
     public function addFolder()
     {
-        if ($this->user->hasThePerm($this->username, "create-file")) {
-            $this->response->setStatus('200');
-            $this->response->setContent("OK");
-            $this->response->finish();
-        } else {
+        if (!$this->user->hasThePerm($this->username, "create-file")) {
             $this->response->setStatus('401');
             $this->response->setContent("no authorization");
             $this->response->finish();
-
         }
+
+        $this->response->setStatus('200');
+        $this->response->setContent("OK");
+        $this->response->finish();
+
     }
 
     public function rename()
     {
-        if ($this->user->hasThePerm($this->username, "update-file")) {
-            $this->response->setStatus('200');
-            $this->response->setContent("OK");
-            $this->response->finish();
-        } else {
+        if (!$this->user->hasThePerm($this->username, "update-file")) {
             $this->response->setStatus('401');
             $this->response->setContent("no authorization");
             $this->response->finish();
-
         }
+
+        $this->response->setStatus('200');
+        $this->response->setContent("OK");
+        $this->response->finish();
+
     }
 
     public function copy()
     {
-        if ($this->user->hasThePerm($this->username, "update-file")) {
-            $this->response->setStatus('200');
-            $this->response->setContent("OK");
-            $this->response->finish();
-        } else {
+        if (!$this->user->hasThePerm($this->username, "update-file")) {
             $this->response->setStatus('401');
             $this->response->setContent("no authorization");
             $this->response->finish();
-
         }
+
+        $this->response->setStatus('200');
+        $this->response->setContent("OK");
+        $this->response->finish();
+
     }
 
     public function copyFolder()
     {
-        if ($this->user->hasThePerm($this->username, "update-file")) {
-            $this->response->setStatus('200');
-            $this->response->setContent("OK");
-            $this->response->finish();
-        } else {
+        if (!$this->user->hasThePerm($this->username, "update-file")) {
             $this->response->setStatus('401');
             $this->response->setContent("no authorization");
             $this->response->finish();
-
         }
+
+        $this->response->setStatus('200');
+        $this->response->setContent("OK");
+        $this->response->finish();
+
     }
 
     public function delete()
     {
-        if ($this->user->hasThePerm($this->username, "delete-file")) {
-            $this->response->setStatus('200');
-            $this->response->setContent("OK");
-            $this->response->finish();
-        } else {
+        if (!$this->user->hasThePerm($this->username, "delete-file")) {
             $this->response->setStatus('401');
             $this->response->setContent("no authorization");
             $this->response->finish();
-
         }
+
+        $this->response->setStatus('200');
+        $this->response->setContent("OK");
+        $this->response->finish();
+
     }
 
     public function forceDelete()
     {
-        if ($this->user->hasThePerm($this->username, "delete-file")) {
-            $this->response->setStatus('200');
-            $this->response->setContent("OK");
-            $this->response->finish();
-        } else {
+        if (!$this->user->hasThePerm($this->username, "delete-file")) {
             $this->response->setStatus('401');
             $this->response->setContent("no authorization");
             $this->response->finish();
-
         }
+
+        $this->response->setStatus('200');
+        $this->response->setContent("OK");
+        $this->response->finish();
+
     }
 
     public function addUser()
@@ -151,16 +150,15 @@ class Main
         }
 
         $input = file_get_contents('php://input');
-        $object = json_decode($input,true);
+        $object = json_decode($input, true);
 
-        if ($object == NULL){
+        if ($object == null) {
             $this->response->setStatus('415');
             $this->response->setContent("Invalid Format");
             $this->response->finish();
         }
 
-        if (!array_key_exists("username",$object) or !array_key_exists("permissions_string",$object))
-        {
+        if (!array_key_exists("username", $object) or !array_key_exists("permissions_string", $object)) {
             $this->response->setStatus('400');
             $this->response->setContent("Missing Property");
             $this->response->finish();
@@ -172,8 +170,7 @@ class Main
         }
         $perms_input = explode('-', $object['permissions_string']);
 
-        if (count($perms_input) != 8)
-        {
+        if (count($perms_input) != 8) {
             $this->response->setStatus('400');
             $this->response->setContent("Permissions too long or too short");
             $this->response->finish();
@@ -184,8 +181,8 @@ class Main
         //$this->response->setContent(count(array_intersect($target_arr1, $perms_input)). " - ". count(array_intersect($target_arr2, $perms_input)) .' --- '.count(array_diff($target_arr1, $perms_input)). " - ". count(array_diff($target_arr2, $perms_input)));
         foreach ($perms_input as $key => $val) {
             foreach ($target_arr1 as $keyt1 => $valuet1) {
-                if ($key ==  $keyt1) {
-                    if ($val != $valuet1 and $val != 'xx'){
+                if ($key == $keyt1) {
+                    if ($val != $valuet1 and $val != 'xx') {
                         $this->response->setStatus('400');
                         $this->response->setContent("Permissions Not Accurate");
                         $this->response->finish();
@@ -198,73 +195,79 @@ class Main
         $aclJSON = $this::$aclJSON;
         $jsonFile = file_get_contents($aclJSON);
         $json_a = json_decode($jsonFile, true);
-        $output =array_merge($json_a,array($object['username']=>$object['permissions_string']));
+        $output = array_merge($json_a, array($object['username'] => $object['permissions_string']));
         file_put_contents($aclJSON, json_encode($output, JSON_PRETTY_PRINT));
 
-
-
         $this->response->setStatus('200');
-        $this->response->setContent($object['username']. " - ". $object['permissions_string']);
+        $this->response->setContent($object['username'] . " - " . $object['permissions_string']);
         $this->response->finish();
-
-
 
     }
 
-    public function userInfo()
+    public function userInfo($data)
     {
-        if ($this->user->hasThePerm($this->username, "read-user")) {
-            $this->response->setStatus('200');
-            $this->response->setContent("OK");
-            $this->response->finish();
-        } else {
+        if (!$this->user->hasThePerm($this->username, "read-user")) {
             $this->response->setStatus('401');
             $this->response->setContent("no authorization");
             $this->response->finish();
-
         }
+
+        $this->response->setStatus('200');
+        $this->response->setContent("OK");
+        $this->response->finish();
+
     }
 
     public function listUsers()
     {
-        if ($this->user->hasThePerm($this->username, "read-user")) {
-            $this->response->setStatus('200');
-            $this->response->setContent("OK");
-            $this->response->finish();
-        } else {
+        if (!$this->user->hasThePerm($this->username, "read-user")) {
             $this->response->setStatus('401');
             $this->response->setContent("no authorization");
             $this->response->finish();
-
         }
+
+        $aclJSON = $this::$aclJSON;
+
+        $jsonFile = file_get_contents($aclJSON);
+        $json_a = json_decode($jsonFile, true);
+        $str = '';
+        foreach ($json_a as $key => $val) {
+            $str .= $key . ", ";
+        }
+
+
+        $this->response->setStatus('200');
+        $this->response->setContent("There are " .count($json_a) . " Users : ". rtrim($str,', '));
+        $this->response->finish();
+
     }
 
-    public function updateUser()
+    public function updateUser($data)
     {
-        if ($this->user->hasThePerm($this->username, "update-users-permissions")) {
-            $this->response->setStatus('200');
-            $this->response->setContent("OK");
-            $this->response->finish();
-        } else {
+        if (!$this->user->hasThePerm($this->username, "update-users-permissions")) {
             $this->response->setStatus('401');
             $this->response->setContent("no authorization");
             $this->response->finish();
-
         }
+
+        $this->response->setStatus('200');
+        $this->response->setContent("OK");
+        $this->response->finish();
+
     }
 
-    public function deleteUser()
+    public function deleteUser($data)
     {
-        if ($this->user->hasThePerm($this->username, "delete-user")) {
-            $this->response->setStatus('200');
-            $this->response->setContent("OK");
-            $this->response->finish();
-        } else {
+        if (!$this->user->hasThePerm($this->username, "delete-user")) {
             $this->response->setStatus('401');
             $this->response->setContent("no authorization");
             $this->response->finish();
-
         }
+
+        $this->response->setStatus('200');
+        $this->response->setContent("OK");
+        $this->response->finish();
+
     }
 
 }
