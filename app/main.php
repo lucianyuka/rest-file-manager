@@ -8,10 +8,11 @@ use App\Response;
 use App\User;
 use Dotenv\Dotenv;
 
-class HomeController
+class Main
 {
     private $username;
-    public $response;
+    private $response;
+    private $user;
 
     public function __construct()
     {
@@ -30,7 +31,7 @@ class HomeController
         if ($this->user->hasThePerm($this->username, "read-file")) {
             $this->response->setStatus('200');
             $this->response->setUserCred($this->username);
-            $this->response->setContent("OK");
+            $this->response->setContent($data);
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -43,6 +44,7 @@ class HomeController
 
     public function upload()
     {
+
         if ($this->user->hasThePerm($this->username, "create-file")) {
             $this->response->setStatus('200');
             $this->response->setContent("OK");

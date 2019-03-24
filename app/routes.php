@@ -1,23 +1,21 @@
 <?php
-declare (strict_types = 1);
+//declare (strict_types = 1);
 
 use App\Auth;
 use App\Response;
 use Bramus\Router\Router;
 
-// Create Router instance
-$router = new Router();
-
 $response = new Response();
 $auth = new Auth;
 
+// Create Router instance
+$router = new Router();
+$router->setNamespace('\App');
+
 $router->before('GET|POST|PUT|DELETE', '/.*', function () use ($auth, $response) {
-    if ($auth->validateToken()) {
-        $response->setStatus(200);
-        $response->setUserCred($auth->getUsernameFromToken());
-    } else {
+    if (!$auth->validateToken()) {
         $response->setStatus(401);
-        $response->setContent('Missing or invalid API Key.');
+        $response->setContent('Missing1 or invalid API Key.');
         $response->finish();
     }
 });
@@ -30,39 +28,31 @@ $router->set404(function () use ($response) {
 });
 
 // Define our routes
-$router->get('/', function () use ($response) {
-    $response->setStatus('200');
-    $response->setUserCred("OK");
-    $response->setContent('Welcome!');
-    $response->finish();
-});
+$router->get('/info/{path}', 'Main@showInfo');
 
-// … (more routes here)
-$router->get('/info/{path}', 'App\HomeController@showInfo');
+$router->post('/upload', 'Main@upload');
 
-$router->post('/upload', 'App\HomeController@upload');
+$router->post('/add-folder', 'Main@addFolder');
 
-$router->post('/add-folder', 'App\HomeController@addFolder');
+$router->put('/rename', 'Main@rename');
 
-$router->put('/rename', 'App\HomeController@rename');
+$router->post('/copy', 'Main@copy');
 
-$router->post('/copy', 'App\HomeController@copy');
+$router->post('/copy-folder', 'Main@copyFolder');
 
-$router->post('/copy-folder', 'App\HomeController@copyFolder');
+$router->delete('/delete', 'Main@delete');
 
-$router->delete('/delete', 'App\HomeController@delete');
+$router->delete('/force-delete', 'Main@forceDelete');
 
-$router->delete('/force-delete', 'App\HomeController@forceDelete');
+$router->post('/add-user', 'Main@addUser');
 
-$router->post('/add-user', 'App\HomeController@addUser');
+$router->get('/user/{username} ', 'Main@userInfo');
 
-$router->get('/user/{username} ', 'App\HomeController@userInfo');
+$router->get('/users', 'Main@listUsers');
 
-$router->get('/users', 'App\HomeController@listUsers');
+$router->put('/update-user/{username}', 'Main@updateUser');
 
-$router->put('/update-user/{username}', 'App\HomeController@updateUser');
-
-$router->delete('/delete-user/{username}', 'App\HomeController@deleteUser');
+$router->delete('/delete-user/{username}', 'Main@deleteUser');
 
 // Run the router
 $router->run();
