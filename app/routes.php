@@ -46,7 +46,7 @@ $router->delete('/force-delete', 'Main@forceDelete');
 
 $router->post('/add-user', 'Main@addUser');
 
-$router->get('/user/{username} ', 'Main@userInfo');
+$router->get('/user/{username}', 'Main@userInfo');
 
 $router->get('/users', 'Main@listUsers');
 

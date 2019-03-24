@@ -35,10 +35,8 @@ class Main
         }
 
         $this->response->setStatus('200');
-        $this->response->setContent("OK");
+        $this->response->setContent($data);
         $this->response->finish();
-
-
 
     }
 
@@ -53,7 +51,6 @@ class Main
         $this->response->setStatus('200');
         $this->response->setContent("OK");
         $this->response->finish();
-
 
     }
 
@@ -212,8 +209,25 @@ class Main
             $this->response->finish();
         }
 
+        if (!$this->user->isRegistredUser($data)) {
+            $this->response->setStatus('400');
+            $this->response->setContent("Username Not Available");
+            $this->response->finish();
+        }
+
+        $aclJSON = $this::$aclJSON;
+
+        $jsonFile = file_get_contents($aclJSON);
+        $json_a = json_decode($jsonFile, true);
+
+        foreach ($json_a as $key => $val) {
+            if ($key == $data) {
+                $userData = $key;
+                $userPerm = $val;
+            }
+        }
         $this->response->setStatus('200');
-        $this->response->setContent("OK");
+        $this->response->setContent("User " . $data . " has the following permissions " . $userPerm);
         $this->response->finish();
 
     }
@@ -235,9 +249,8 @@ class Main
             $str .= $key . ", ";
         }
 
-
         $this->response->setStatus('200');
-        $this->response->setContent("There are " .count($json_a) . " Users : ". rtrim($str,', '));
+        $this->response->setContent("There are " . count($json_a) . " Users : " . rtrim($str, ', '));
         $this->response->finish();
 
     }
