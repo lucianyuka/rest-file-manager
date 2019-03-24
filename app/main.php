@@ -40,7 +40,7 @@ class HomeController
 
     }
 
-    public function uploada)
+    public function uploada()
     {
         if ($this->user->hasThePerm($this->username, "create-file")) {
             $this->response->setStatus('200');
