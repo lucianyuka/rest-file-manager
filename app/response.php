@@ -1,4 +1,5 @@
 <?php
+declare (strict_types = 1);
 
 namespace App;
 
@@ -40,8 +41,8 @@ class Response
         // build JSON string to return
         $json = json_encode(
             array(
-                'status'  => $this->status,
-                'user'    => $this->userCred,
+                'status' => $this->status,
+                'user' => $this->userCred,
                 'content' => $this->content,
             )
         );
@@ -49,7 +50,7 @@ class Response
         header('Cache-Control: no-cache, must-revalidate');
         header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
         header("Access-Control-Allow-Origin: *");
-        header("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE");
+        header("Access-Control-Allow-Methods: POST, GET, PUT, DELETE");
         header('Access-Control-Allow-Headers: Access-Control-Allow-Headers,Content-Type,Access-Control-Allow-Methods, Authorization, Accept, Origin, X-Requested-With');
         header("Access-Control-Max-Age: 600");
         header("Content-Type: application/json");
@@ -116,9 +117,8 @@ class Response
         header('HTTP/1.1 ' . $this->status['code'] . ' ' . $this->status['text']);
     }
 
-
     /**
-     * @var		function	setUserCred($userCred)
+     * @var        function    setUserCred($userCred)
      */
     final public function setUserCred($userCred)
     {

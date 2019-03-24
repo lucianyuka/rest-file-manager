@@ -1,9 +1,11 @@
 <?php
+declare (strict_types = 1);
+
 namespace App;
 
+use App\Auth;
 use App\Response;
 use App\User;
-use App\Auth;
 use Dotenv\Dotenv;
 
 class HomeController
@@ -29,7 +31,7 @@ class HomeController
         if ($this->user->hasThePerm($this->username, "read-file")) {
             $this->response->setStatus('200');
             $this->response->setUserCred($this->username);
-            $this->response->setContent("OK") ;
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -72,7 +74,7 @@ class HomeController
     {
         if ($this->user->hasThePerm($this->username, "update-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent("OK") ;
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -86,7 +88,7 @@ class HomeController
     {
         if ($this->user->hasThePerm($this->username, "update-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent("OK") ;
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -100,7 +102,7 @@ class HomeController
     {
         if ($this->user->hasThePerm($this->username, "update-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent("OK") ;
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -114,7 +116,7 @@ class HomeController
     {
         if ($this->user->hasThePerm($this->username, "delete-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent("OK") ;
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -128,7 +130,7 @@ class HomeController
     {
         if ($this->user->hasThePerm($this->username, "delete-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent("OK") ;
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -142,7 +144,7 @@ class HomeController
     {
         if ($this->user->hasThePerm($this->username, "create-user")) {
             $this->response->setStatus('200');
-            $this->response->setContent("OK") ;
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -156,7 +158,7 @@ class HomeController
     {
         if ($this->user->hasThePerm($this->username, "read-user")) {
             $this->response->setStatus('200');
-            $this->response->setContent("OK") ;
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -170,7 +172,7 @@ class HomeController
     {
         if ($this->user->hasThePerm($this->username, "read-user")) {
             $this->response->setStatus('200');
-            $this->response->setContent("OK") ;
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -184,7 +186,7 @@ class HomeController
     {
         if ($this->user->hasThePerm($this->username, "update-users-permissions")) {
             $this->response->setStatus('200');
-            $this->response->setContent("OK") ;
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -198,7 +200,7 @@ class HomeController
     {
         if ($this->user->hasThePerm($this->username, "delete-user")) {
             $this->response->setStatus('200');
-            $this->response->setContent("OK") ;
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');

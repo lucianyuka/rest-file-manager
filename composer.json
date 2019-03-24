@@ -20,6 +20,11 @@
             "App\\": "app/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
     "require-dev": {
         "filp/whoops": "^2.3",
         "symfony/var-dumper": "^4.2",

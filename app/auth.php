@@ -1,6 +1,6 @@
 <?php
+declare (strict_types = 1);
 namespace App;
-
 
 use App\User;
 use Dotenv\Dotenv;
@@ -25,15 +25,17 @@ class Auth
             "nbf" => $_ENV['APP_NBF'],
             "exp" => time() + 3666600,
             "data" => array(
-                "username" => $username
-            )
+                "username" => $username,
+            ),
         );
         $jwt = JWT::encode($token, $_ENV['APP_KEY']);
     }
 
-    public function validateToken(){
+    public function validateToken()
+    {
         if (isset($_SERVER["HTTP_AUTHORIZATION"])) {
-            list($type, $data) = explode(" ", $_SERVER["HTTP_AUTHORIZATION"], 2);
+
+            list($type, $data) = array_pad(explode(" ", $_SERVER["HTTP_AUTHORIZATION"], 2), 2, null);
             if (strcasecmp($type, "Bearer") == 0) {
                 try {
                     JWT::$leeway = 60; // $leeway in seconds for catching DomainException when token is incorrect
@@ -41,8 +43,8 @@ class Auth
                 } catch (\Exception $e) {
                     return false;
                 }
-                $username =$decoded->data->username;
-                if (isset($username) and $this->user->isRegistredUser($username)){
+                $username = $decoded->data->username;
+                if (isset($username) and $this->user->isRegistredUser($username)) {
                     return true;
                 } else {
                     return false;
@@ -56,14 +58,14 @@ class Auth
         }
     }
 
-    public function getUsernameFromToken(){
-       if ($this->validateToken()){
-        list($type, $data) = explode(" ", $_SERVER["HTTP_AUTHORIZATION"], 2);
-        $decoded = JWT::decode($data, $_ENV['APP_KEY'], array('HS256'));
-        $username =$decoded->data->username;
-       }
-       return $username;
+    public function getUsernameFromToken()
+    {
+        if ($this->validateToken()) {
+            list($type, $data) = explode(" ", $_SERVER["HTTP_AUTHORIZATION"], 2);
+            $decoded = JWT::decode($data, $_ENV['APP_KEY'], array('HS256'));
+            $username = $decoded->data->username;
+        }
+        return $username;
     }
 
 }
-
