@@ -60,7 +60,7 @@ class User
      */
     private function Json2Array()
     {
-        $aclJSON = dirname(__DIR__) . $this::$aclJSON;
+        $aclJSON = $this::$aclJSON;
 
         $jsonFile = file_get_contents($aclJSON);
         $json_a = json_decode($jsonFile, true);
@@ -97,7 +97,7 @@ class User
      * @param    mixed    $user
      * @return    boolean
      */
-    public function is_permitted_user($user)
+    public function isRegistredUser($user)
     {
         $array = $this->Json2Array();
         if (array_search($user, array_column($array, 'username')) !== false) {
@@ -137,5 +137,16 @@ class User
         }
 
     }
+
+    public function in_array_r($needle, $haystack, $strict = false)
+    {
+        foreach ($haystack as $item) {
+            if (($strict ? $item === $needle : $item == $needle) || (is_array($item) && $this->in_array_r($needle, $item, $strict))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
 }

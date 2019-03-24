@@ -18,6 +18,7 @@ class Response
      * @var array
      */
     private $status;
+    private $userCred;
     private $content;
 
     /**
@@ -26,6 +27,7 @@ class Response
     public function __construct()
     {
         $this->setStatus(200);
+        $this->setUserCred('');
         $this->setContent('');
     }
 
@@ -38,7 +40,8 @@ class Response
         // build JSON string to return
         $json = json_encode(
             array(
-                'status' => $this->status,
+                'status'  => $this->status,
+                'user'    => $this->userCred,
                 'content' => $this->content,
             )
         );
@@ -111,6 +114,15 @@ class Response
             'text' => $codes[$statusCode],
         );
         header('HTTP/1.1 ' . $this->status['code'] . ' ' . $this->status['text']);
+    }
+
+
+    /**
+     * @var		function	setUserCred($userCred)
+     */
+    final public function setUserCred($userCred)
+    {
+        $this->userCred = $userCred;
     }
 
     /**

@@ -3,26 +3,33 @@ namespace App;
 
 use App\Response;
 use App\User;
+use App\Auth;
 use Dotenv\Dotenv;
 
 class HomeController
 {
+    private $username;
     public $response;
+
     public function __construct()
     {
         $dotenv = Dotenv::create(dirname(__DIR__));
         $dotenv->load();
-        $this->user = new User;
         $this->response = new Response();
+        $this->user = new User;
+        $this->auth = new Auth;
+        $this->username = $this->auth->getUsernameFromToken();
+
     }
 
     //echo $_ENV['APP_NAME'];
 
     public function info($data)
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "read-file")) {
+        if ($this->user->hasThePerm($this->username, "read-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setUserCred($this->username);
+            $this->response->setContent("OK") ;
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -33,11 +40,11 @@ class HomeController
 
     }
 
-    public function upload($data)
+    public function uploada)
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "create-file")) {
+        if ($this->user->hasThePerm($this->username, "create-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data[0] . '--' . $data[1] . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -49,9 +56,9 @@ class HomeController
 
     public function addFolder()
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "create-file")) {
+        if ($this->user->hasThePerm($this->username, "create-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setContent("OK");
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -63,9 +70,9 @@ class HomeController
 
     public function rename()
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "update-file")) {
+        if ($this->user->hasThePerm($this->username, "update-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setContent("OK") ;
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -77,9 +84,9 @@ class HomeController
 
     public function copy()
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "update-file")) {
+        if ($this->user->hasThePerm($this->username, "update-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setContent("OK") ;
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -91,9 +98,9 @@ class HomeController
 
     public function copyFolder()
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "update-file")) {
+        if ($this->user->hasThePerm($this->username, "update-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setContent("OK") ;
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -105,9 +112,9 @@ class HomeController
 
     public function delete()
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "delete-file")) {
+        if ($this->user->hasThePerm($this->username, "delete-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setContent("OK") ;
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -119,9 +126,9 @@ class HomeController
 
     public function forceDelete()
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "delete-file")) {
+        if ($this->user->hasThePerm($this->username, "delete-file")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setContent("OK") ;
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -133,9 +140,9 @@ class HomeController
 
     public function addUser()
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "create-user")) {
+        if ($this->user->hasThePerm($this->username, "create-user")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setContent("OK") ;
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -147,9 +154,9 @@ class HomeController
 
     public function userInfo()
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "read-user")) {
+        if ($this->user->hasThePerm($this->username, "read-user")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setContent("OK") ;
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -161,9 +168,9 @@ class HomeController
 
     public function listUsers()
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "read-user")) {
+        if ($this->user->hasThePerm($this->username, "read-user")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setContent("OK") ;
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -175,9 +182,9 @@ class HomeController
 
     public function updateUser()
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "update-users-permissions")) {
+        if ($this->user->hasThePerm($this->username, "update-users-permissions")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setContent("OK") ;
             $this->response->finish();
         } else {
             $this->response->setStatus('401');
@@ -189,9 +196,9 @@ class HomeController
 
     public function deleteUser()
     {
-        if ($this->user->hasThePerm($_SERVER['PHP_AUTH_USER'], "delete-user")) {
+        if ($this->user->hasThePerm($this->username, "delete-user")) {
             $this->response->setStatus('200');
-            $this->response->setContent($data . '--' . $_SERVER['PHP_AUTH_USER']);
+            $this->response->setContent("OK") ;
             $this->response->finish();
         } else {
             $this->response->setStatus('401');

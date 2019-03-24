@@ -1,6 +1,7 @@
 <?php
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
+
 $user = new App\User;
 
 $run = new \Whoops\Run;
@@ -13,10 +14,19 @@ $run->register();
 // Create Router instance
 $router = new \Bramus\Router\Router();
 $response = new App\Response();
+$auth = new App\Auth;
 
-// Define routes
-/* $router->before('GET|POST|PUT|DELETE', '/.*', function () use ($response) {
-}); */
+ $router->before('GET|POST|PUT|DELETE', '/.*', function () use ($auth,$response) {
+    if ($auth->validateToken()) {
+        $response->setStatus(200);
+        $response->setUserCred($auth->getUsernameFromToken());
+
+    }else{
+        $response->setStatus(401);
+        $response->setContent('Missing1 or invalid API Key.');
+        $response->finish();
+    }
+});
 
 // Override the standard router 404
 $router->set404(function () use ($response) {
