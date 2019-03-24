@@ -5,26 +5,19 @@ use App\Auth;
 use App\Response;
 use Bramus\Router\Router;
 
-$run = new \Whoops\Run;
-$handler = new \Whoops\Handler\PrettyPageHandler;
-$JsonHandler = new \Whoops\Handler\JsonResponseHandler;
-$run->pushHandler($JsonHandler);
-$run->pushHandler($handler);
-$run->register();
-
 // Create Router instance
 $router = new Router();
+
 $response = new Response();
 $auth = new Auth;
 
 $router->before('GET|POST|PUT|DELETE', '/.*', function () use ($auth, $response) {
     if ($auth->validateToken()) {
         $response->setStatus(200);
-//$response->setUserCred($auth->getUsernameFromToken());
-
+        $response->setUserCred($auth->getUsernameFromToken());
     } else {
         $response->setStatus(401);
-        $response->setContent('Missing1 or invalid API Key.');
+        $response->setContent('Missing or invalid API Key.');
         $response->finish();
     }
 });
@@ -45,21 +38,21 @@ $router->get('/', function () use ($response) {
 });
 
 // … (more routes here)
-$router->get('/info/{path}', 'App\HomeController@info');
+$router->get('/info/{path}', 'App\HomeController@showInfo');
 
 $router->post('/upload', 'App\HomeController@upload');
 
 $router->post('/add-folder', 'App\HomeController@addFolder');
 
-$router->post('/rename', 'App\HomeController@rename');
+$router->put('/rename', 'App\HomeController@rename');
 
 $router->post('/copy', 'App\HomeController@copy');
 
 $router->post('/copy-folder', 'App\HomeController@copyFolder');
 
-$router->post('/delete', 'App\HomeController@delete');
+$router->delete('/delete', 'App\HomeController@delete');
 
-$router->post('/force-delete', 'App\HomeController@forceDelete');
+$router->delete('/force-delete', 'App\HomeController@forceDelete');
 
 $router->post('/add-user', 'App\HomeController@addUser');
 
@@ -67,9 +60,9 @@ $router->get('/user/{username} ', 'App\HomeController@userInfo');
 
 $router->get('/users', 'App\HomeController@listUsers');
 
-$router->post('/update-user/{username}', 'App\HomeController@updateUser');
+$router->put('/update-user/{username}', 'App\HomeController@updateUser');
 
-$router->post('/delete-user/{username}', 'App\HomeController@deleteUser');
+$router->delete('/delete-user/{username}', 'App\HomeController@deleteUser');
 
 // Run the router
 $router->run();

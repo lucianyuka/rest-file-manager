@@ -36,6 +36,7 @@ class Auth
         if (isset($_SERVER["HTTP_AUTHORIZATION"])) {
 
             list($type, $data) = array_pad(explode(" ", $_SERVER["HTTP_AUTHORIZATION"], 2), 2, null);
+            //list($type, $data) = explode(" ", $_SERVER["HTTP_AUTHORIZATION"], 2);
             if (strcasecmp($type, "Bearer") == 0) {
                 try {
                     JWT::$leeway = 60; // $leeway in seconds for catching DomainException when token is incorrect

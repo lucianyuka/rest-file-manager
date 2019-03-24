@@ -24,10 +24,9 @@ class HomeController
 
     }
 
-    //echo $_ENV['APP_NAME'];
-
-    public function info($data)
+    public function showInfo($data)
     {
+
         if ($this->user->hasThePerm($this->username, "read-file")) {
             $this->response->setStatus('200');
             $this->response->setUserCred($this->username);
@@ -42,7 +41,7 @@ class HomeController
 
     }
 
-    public function uploada()
+    public function upload()
     {
         if ($this->user->hasThePerm($this->username, "create-file")) {
             $this->response->setStatus('200');
