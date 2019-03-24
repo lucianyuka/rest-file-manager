@@ -39,13 +39,22 @@ class Response
     public function finish()
     {
         // build JSON string to return
-        $json = json_encode(
-            array(
-                'status' => $this->status,
-                'user' => $this->userCred,
-                'content' => $this->content,
-            )
-        );
+        if ($this->userCred != '') {
+            $json = json_encode(
+                array(
+                    'status' => $this->status,
+                    'user' => $this->userCred,
+                    'content' => $this->content,
+                )
+            );
+        } else {
+            $json = json_encode(
+                array(
+                    'status' => $this->status,
+                    'content' => $this->content,
+                )
+            );
+        }
 
         header('Cache-Control: no-cache, must-revalidate');
         header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
@@ -102,6 +111,7 @@ class Response
             415 => 'Unsupported Media Type',
             416 => 'Requested Range Not Satisfiable',
             417 => 'Expectation Failed',
+            422 => 'Unprocessable Entity',
             500 => 'Internal Server Error',
             501 => 'Not Implemented',
             502 => 'Bad Gateway',

@@ -77,8 +77,8 @@ class User
             $value = $arr[$i][$indice];
             $acl_a[$i]["username"] = $indice;
             $acl_a[$i]["permissions-code"] = $value;
-            $codes_a = explode('-', $value);
-            foreach ($codes_a as $key => $val) {
+            $codes_arr = explode('-', $value);
+            foreach ($codes_arr as $key => $val) {
                 foreach ($this::$permissions as $code => $permision_string) {
                     if ($val == $code) {
                         $acl_a[$i]["permissions"][] = array($key => $permision_string);
