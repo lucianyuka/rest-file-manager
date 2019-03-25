@@ -7,6 +7,8 @@ use App\Auth;
 use App\Response;
 use App\User;
 use Dotenv\Dotenv;
+use League\Flysystem\Adapter\Local as Adapter;
+use League\Flysystem\Filesystem;
 
 class Main
 {
@@ -14,13 +16,20 @@ class Main
     private $response;
     private $user;
     private $auth;
+    private $filesystem;
+
     private static $aclJSON;
+    private static $uploadsFolder;
+    private static $tempFolder;
 
     public function __construct()
     {
         $dotenv = Dotenv::create(dirname(__DIR__));
         $dotenv->load();
         $this::$aclJSON = dirname(__DIR__) . $_ENV['JSON_PATH'];
+        $this::$uploadsFolder = $_ENV['UPLOADS_FOLDER'];
+        $this::$tempFolder = $_ENV['TEMP_FOLDER'];
+        $this->filesystem = new Filesystem(new Adapter($this::$uploadsFolder));
         $this->response = new Response();
         $this->user = new User;
         $this->auth = new Auth;
@@ -50,8 +59,37 @@ class Main
             $this->response->finish();
         }
 
+        if (count($_POST) == 0 or count($_FILES) ==0) {
+            $this->response->setStatus('415');
+            $this->response->setContent("Invalid Format");
+            $this->response->finish();
+        }
+
+        if (!$_FILES['file']) {
+            $this->response->setStatus('400');
+            $this->response->setContent("Missing Property");
+            $this->response->finish();
+        }
+
+        /* array (size=5)
+        'name' => string 'v7bsnwekQ_I.jpg' (length=15)
+        'type' => string 'image/jpeg' (length=10)
+        'tmp_name' => string '/tmp/phpajFZqT' (length=14)
+        'error' => int 0
+        'size' => int 241673 */
+        //substr($_POST['path'], -1)!= '/'
+        $stream = fopen($_FILES['file']['tmp_name'], 'r+');
+        $this->filesystem->writeStream(
+            $_POST['path'] . DIRECTORY_SEPARATOR . $_FILES['file']['name'],
+            $stream
+        );
+
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+
         $this->response->setStatus('200');
-        $this->response->setContent("OK");
+        $this->response->setContent("File " . $_FILES['file']['name']. " uploaded successfully to ".$_POST['path']);
         $this->response->finish();
 
     }
