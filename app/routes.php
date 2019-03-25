@@ -50,7 +50,7 @@ $router->get('/user/{username}', 'Main@userInfo');
 
 $router->get('/users', 'Main@listUsers');
 
-$router->put('/update-user/{username}', 'Main@updateUser');
+$router->put('/update-user', 'Main@updateUser');
 
 $router->delete('/delete-user/{username}', 'Main@deleteUser');
 

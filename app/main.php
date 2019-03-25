@@ -13,7 +13,9 @@ class Main
     private $username;
     private $response;
     private $user;
+    private $auth;
     private static $aclJSON;
+
     public function __construct()
     {
         $dotenv = Dotenv::create(dirname(__DIR__));
@@ -160,7 +162,7 @@ class Main
             $this->response->setContent("Missing Property");
             $this->response->finish();
         }
-        if ($this->user->isRegistredUser($object['username'])) {
+        if ($this->user->isRegistredUser(strtolower($object['username']))) {
             $this->response->setStatus('400');
             $this->response->setContent("Username Not Available");
             $this->response->finish();
@@ -189,14 +191,16 @@ class Main
             }
         }
 
-        $aclJSON = $this::$aclJSON;
-        $jsonFile = file_get_contents($aclJSON);
-        $json_a = json_decode($jsonFile, true);
-        $output = array_merge($json_a, array($object['username'] => $object['permissions_string']));
-        file_put_contents($aclJSON, json_encode($output, JSON_PRETTY_PRINT));
+        $json_a = $this->jsonToArray($this::$aclJSON);
+
+        $output = array_merge($json_a, array(strtolower($object['username']) => $object['permissions_string']));
+        file_put_contents($this::$aclJSON, json_encode($output, JSON_PRETTY_PRINT));
+
+        $token_generated = $this->auth->generateToken(strtolower($object['username']));
 
         $this->response->setStatus('200');
-        $this->response->setContent($object['username'] . " - " . $object['permissions_string']);
+        $this->response->setUserCred($token_generated);
+        $this->response->setContent("User " . $object['username'] . " with permissions " . $object['permissions_string'] . " was added successfully");
         $this->response->finish();
 
     }
@@ -209,26 +213,21 @@ class Main
             $this->response->finish();
         }
 
-        if (!$this->user->isRegistredUser($data)) {
+        if (!$this->user->isRegistredUser(strtolower($data))) {
             $this->response->setStatus('400');
             $this->response->setContent("Username Not Available");
             $this->response->finish();
         }
 
-        $aclJSON = $this::$aclJSON;
-
-        $jsonFile = file_get_contents($aclJSON);
-        $json_a = json_decode($jsonFile, true);
+        $json_a = $this->jsonToArray($this::$aclJSON);
 
         foreach ($json_a as $key => $val) {
-            if ($key == $data) {
-                $userData = $key;
-                $userPerm = $val;
+            if ($key == strtolower($data)) {
+                $this->response->setStatus('200');
+                $this->response->setContent("User " . $key . " has the following permissions " . $val);
+                $this->response->finish();
             }
         }
-        $this->response->setStatus('200');
-        $this->response->setContent("User " . $data . " has the following permissions " . $userPerm);
-        $this->response->finish();
 
     }
 
@@ -240,10 +239,7 @@ class Main
             $this->response->finish();
         }
 
-        $aclJSON = $this::$aclJSON;
-
-        $jsonFile = file_get_contents($aclJSON);
-        $json_a = json_decode($jsonFile, true);
+        $json_a = $this->jsonToArray($this::$aclJSON);
         $str = '';
         foreach ($json_a as $key => $val) {
             $str .= $key . ", ";
@@ -255,7 +251,7 @@ class Main
 
     }
 
-    public function updateUser($data)
+    public function updateUser()
     {
         if (!$this->user->hasThePerm($this->username, "update-users-permissions")) {
             $this->response->setStatus('401');
@@ -263,8 +259,62 @@ class Main
             $this->response->finish();
         }
 
+        $input = file_get_contents('php://input');
+        //parse_str(file_get_contents("php://input"), $input);
+
+        $object = json_decode($input, true);
+
+        if ($object == null) {
+            $this->response->setStatus('415');
+            $this->response->setContent("Invalid Format");
+            $this->response->finish();
+        }
+
+        if (!array_key_exists("username", $object) or !array_key_exists("permissions_string", $object)) {
+            $this->response->setStatus('400');
+            $this->response->setContent("Missing Property");
+            $this->response->finish();
+        }
+        if ($this->user->isRegistredUser(strtolower($object['username']))) {
+            $this->response->setStatus('400');
+            $this->response->setContent("Username Not Available");
+            $this->response->finish();
+        }
+        $perms_input = explode('-', $object['permissions_string']);
+
+        if (count($perms_input) != 8) {
+            $this->response->setStatus('400');
+            $this->response->setContent("Permissions too long or too short");
+            $this->response->finish();
+        }
+
+        $target_arr1 = explode('-', 'cf-rf-uf-df-cu-ru-uu-du');
+
+        foreach ($perms_input as $key => $val) {
+            foreach ($target_arr1 as $keyt1 => $valuet1) {
+                if ($key == $keyt1) {
+                    if ($val != $valuet1 and $val != 'xx') {
+                        $this->response->setStatus('400');
+                        $this->response->setContent("Permissions Not Accurate");
+                        $this->response->finish();
+                    }
+
+                }
+            }
+        }
+
+        $json_a = $this->jsonToArray($this::$aclJSON);
+
+        foreach ($json_a as $key => $val) {
+            if ($key == strtolower($object['username'])) {
+                $val = $object['permissions_string'];
+            }
+        }
+
+        file_put_contents($this::$aclJSON, json_encode($json_a, JSON_PRETTY_PRINT));
+
         $this->response->setStatus('200');
-        $this->response->setContent("OK");
+        $this->response->setContent("User " . $object['username'] . " was succefully updated with the following permissions " . $object['permissions_string']);
         $this->response->finish();
 
     }
@@ -281,6 +331,13 @@ class Main
         $this->response->setContent("OK");
         $this->response->finish();
 
+    }
+
+    private function jsonToArray($file)
+    {
+        $jsonFile = file_get_contents($file);
+        $json_a = json_decode($jsonFile, true);
+        return $json_a;
     }
 
 }

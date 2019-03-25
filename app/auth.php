@@ -29,6 +29,8 @@ class Auth
             ),
         );
         $jwt = JWT::encode($token, $_ENV['APP_KEY']);
+
+        return $jwt;
     }
 
     public function validateToken()

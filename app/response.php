@@ -19,6 +19,7 @@ class Response
      * @var array
      */
     private $status;
+    private $userCred;
     private $content;
 
     /**
@@ -27,6 +28,7 @@ class Response
     public function __construct()
     {
         $this->setStatus(200);
+        $this->setUserCred('');
         $this->setContent('');
     }
 
@@ -37,13 +39,22 @@ class Response
     public function finish()
     {
         // build JSON string to return
-
-        $json = json_encode(
-            array(
-                'status' => $this->status,
-                'content' => $this->content,
-            )
-        );
+        if ($this->userCred != '') {
+            $json = json_encode(
+                array(
+                    'status' => $this->status,
+                    'token' => $this->userCred,
+                    'content' => $this->content,
+                )
+            );
+        } else {
+            $json = json_encode(
+                array(
+                    'status' => $this->status,
+                    'content' => $this->content,
+                )
+            );
+        }
 
         header('Cache-Control: no-cache, must-revalidate');
         header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
@@ -116,7 +127,13 @@ class Response
         header('HTTP/1.1 ' . $this->status['code'] . ' ' . $this->status['info']);
     }
 
-
+    /**
+     * @var        function    setUserCred($userCred)
+     */
+    final public function setUserCred($userCred)
+    {
+        $this->userCred = $userCred;
+    }
 
     /**
      * Sets the data to output
