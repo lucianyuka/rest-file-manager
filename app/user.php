@@ -102,7 +102,7 @@ class User
     public function isRegistredUser($user)
     {
         $array = $this->Json2Array();
-        if (array_search($user, array_column($array, 'username')) !== false) {
+        if (array_search(strtolower($user), array_column($array, 'username')) !== false) {
             return true;
         } else {
             return false;
@@ -125,10 +125,10 @@ class User
     {
         $array = $this->Json2Array();
         foreach ($array as $userperm) {
-            if ($userperm['username'] != $user) {
+            if ($userperm['username'] != strtolower($user)) {
                 continue;
             } else {
-                if ($userperm['username'] == $user and $this->in_array_r($perm, $userperm['permissions'])) {
+                if ($userperm['username'] == strtolower($user) and $this->in_array_r($perm, $userperm['permissions'])) {
                     return true;
                 } else {
                     return false;

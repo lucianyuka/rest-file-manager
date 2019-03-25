@@ -25,7 +25,7 @@ class Auth
             "nbf" => $_ENV['APP_NBF'],
             "exp" => time() + 3666600,
             "data" => array(
-                "username" => $username,
+                "username" => strtolower($username),
             ),
         );
         $jwt = JWT::encode($token, $_ENV['APP_KEY']);

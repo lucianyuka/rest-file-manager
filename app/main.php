@@ -162,7 +162,7 @@ class Main
             $this->response->setContent("Missing Property");
             $this->response->finish();
         }
-        if ($this->user->isRegistredUser(strtolower($object['username']))) {
+        if ($this->user->isRegistredUser($object['username'])) {
             $this->response->setStatus('400');
             $this->response->setContent("Username Not Available");
             $this->response->finish();
@@ -196,7 +196,7 @@ class Main
         $output = array_merge($json_a, array(strtolower($object['username']) => $object['permissions_string']));
         file_put_contents($this::$aclJSON, json_encode($output, JSON_PRETTY_PRINT));
 
-        $token_generated = $this->auth->generateToken(strtolower($object['username']));
+        $token_generated = $this->auth->generateToken($object['username']);
 
         $this->response->setStatus('200');
         $this->response->setUserCred($token_generated);
@@ -213,7 +213,7 @@ class Main
             $this->response->finish();
         }
 
-        if (!$this->user->isRegistredUser(strtolower($data))) {
+        if (!$this->user->isRegistredUser($data)) {
             $this->response->setStatus('400');
             $this->response->setContent("Username Not Available");
             $this->response->finish();
@@ -275,7 +275,8 @@ class Main
             $this->response->setContent("Missing Property");
             $this->response->finish();
         }
-        if ($this->user->isRegistredUser(strtolower($object['username']))) {
+
+        if (!$this->user->isRegistredUser($object['username'])) {
             $this->response->setStatus('400');
             $this->response->setContent("Username Not Available");
             $this->response->finish();
@@ -305,7 +306,7 @@ class Main
 
         $json_a = $this->jsonToArray($this::$aclJSON);
 
-        foreach ($json_a as $key => $val) {
+        foreach ($json_a as $key => &$val) {
             if ($key == strtolower($object['username'])) {
                 $val = $object['permissions_string'];
             }
