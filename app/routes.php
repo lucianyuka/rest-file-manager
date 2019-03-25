@@ -52,7 +52,7 @@ $router->get('/users', 'Main@listUsers');
 
 $router->put('/update-user', 'Main@updateUser');
 
-$router->delete('/delete-user/{username}', 'Main@deleteUser');
+$router->delete('/delete-user', 'Main@deleteUser');
 
 // Run the router
 $router->run();

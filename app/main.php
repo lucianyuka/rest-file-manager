@@ -299,7 +299,6 @@ class Main
                         $this->response->setContent("Permissions Not Accurate");
                         $this->response->finish();
                     }
-
                 }
             }
         }
@@ -308,7 +307,13 @@ class Main
 
         foreach ($json_a as $key => &$val) {
             if ($key == strtolower($object['username'])) {
-                $val = $object['permissions_string'];
+                if ($val == $object['permissions_string']) {
+                    $this->response->setStatus('200');
+                    $this->response->setContent("Nothing to Update");
+                    $this->response->finish();
+                } else {
+                    $val = $object['permissions_string'];
+                }
             }
         }
 
@@ -320,7 +325,7 @@ class Main
 
     }
 
-    public function deleteUser($data)
+    public function deleteUser()
     {
         if (!$this->user->hasThePerm($this->username, "delete-user")) {
             $this->response->setStatus('401');
@@ -328,8 +333,37 @@ class Main
             $this->response->finish();
         }
 
+        $input = file_get_contents('php://input');
+        //parse_str(file_get_contents("php://input"), $input);
+
+        $object = json_decode($input, true);
+
+        if ($object == null) {
+            $this->response->setStatus('415');
+            $this->response->setContent("Invalid Format");
+            $this->response->finish();
+        }
+
+        if (!array_key_exists("username", $object)) {
+            $this->response->setStatus('400');
+            $this->response->setContent("Missing Property");
+            $this->response->finish();
+        }
+
+        if (!$this->user->isRegistredUser($object['username'])) {
+            $this->response->setStatus('400');
+            $this->response->setContent("Username Not Available");
+            $this->response->finish();
+        }
+
+        $json_a = $this->jsonToArray($this::$aclJSON);
+
+        unset($json_a[strtolower($object['username'])]);
+
+        file_put_contents($this::$aclJSON, json_encode($json_a, JSON_PRETTY_PRINT));
+
         $this->response->setStatus('200');
-        $this->response->setContent("OK");
+        $this->response->setContent("User " . $object['username'] . " was succefully deleted!");
         $this->response->finish();
 
     }
