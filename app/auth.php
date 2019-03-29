@@ -1,39 +1,64 @@
 <?php
-declare (strict_types = 1);
+//declare (strict_types = 1);
 namespace App;
 
 use App\User;
-use Dotenv\Dotenv;
 use Firebase\JWT\JWT;
 
+/**
+ * Auth.
+ *
+ * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+ * @since    v0.0.1
+ * @version    v1.0.0    Friday, March 29th, 2019.
+ * @global
+ */
 class Auth
 {
     public $response;
     public function __construct()
     {
-        $dotenv = Dotenv::create(dirname(__DIR__));
-        $dotenv->load();
+
         $this->user = new User;
     }
 
-    public function generateToken($username)
+    /**
+     * generateToken.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @param    string    $username
+     * @return    string
+     */
+    public function generateToken(string $username): string
     {
         $token = array(
-            "iss" => $_ENV['APP_ISS'],
-            "aud" => $_ENV['APP_AUD'],
-            "iat" => $_ENV['APP_IAT'],
-            "nbf" => $_ENV['APP_NBF'],
+            "iss" => getenv('APP_ISS'),
+            "aud" => getenv('APP_AUD'),
+            "iat" => getenv('APP_IAT'),
+            "nbf" => getenv('APP_NBF'),
             "exp" => time() + 3666600,
             "data" => array(
                 "username" => strtolower($username),
             ),
         );
-        $jwt = JWT::encode($token, $_ENV['APP_KEY']);
+        $jwt = JWT::encode($token, getenv('APP_KEY'));
 
         return $jwt;
     }
 
-    public function validateToken()
+    /**
+     * validateToken.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @return    bool
+     */
+    public function validateToken(): bool
     {
         if (isset($_SERVER["HTTP_AUTHORIZATION"])) {
 
@@ -42,7 +67,7 @@ class Auth
             if (strcasecmp($type, "Bearer") == 0) {
                 try {
                     JWT::$leeway = 60; // $leeway in seconds for catching DomainException when token is incorrect
-                    $decoded = JWT::decode($data, $_ENV['APP_KEY'], array('HS256'));
+                    $decoded = JWT::decode($data, getenv('APP_KEY'), array('HS256'));
                 } catch (\Exception $e) {
                     return false;
                 }
@@ -61,11 +86,20 @@ class Auth
         }
     }
 
-    public function getUsernameFromToken()
+    /**
+     * getUsernameFromToken.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @return    string
+     */
+    public function getUsernameFromToken(): string
     {
         if ($this->validateToken()) {
             list($type, $data) = explode(" ", $_SERVER["HTTP_AUTHORIZATION"], 2);
-            $decoded = JWT::decode($data, $_ENV['APP_KEY'], array('HS256'));
+            $decoded = JWT::decode($data, getenv('APP_KEY'), array('HS256'));
             $username = $decoded->data->username;
         }
         return $username;

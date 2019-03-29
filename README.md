@@ -24,7 +24,7 @@ A PHP file manager with a REST interface
         * `dest`: a string path relative to which `source` will be copied
     * POST /delete - [path] - delete a file or a folder if empty
         * `path`: a string path to the file/folder to be deleted
-    * POST /force-delete - [path] - delete a file or a folder even if empty
+    * POST /force-delete - [path] - delete a file or a folder even if not empty
         * `path`: a string path to the folder to be deleted
     * POST /add-user - [username,permissions_string] - adds the user and responds with an API key
         * `username`: the new username
@@ -54,22 +54,22 @@ A PHP file manager with a REST interface
     * POST /update-user - [username,permissions_string] - update the user
     * POST /delete-user - [username] - deletes the user
 
-| ROUTE            | METHOD | INFO                                                                              | ACL | PERMISSION               |
-|------------------|--------|-----------------------------------------------------------------------------------|-----|--------------------------|
-| /info/{path}     | GET    | get information about a file or directory (size, mime-type, folder contents, etc) | rf  | read-file                |
-| /upload          | POST   | [file,path] - upload a file to path                                               | cf  | create-file              |
-| /add-folder      | POST   | [path] - creates a directory                                                      | cf  | create-file              |
-| /rename          | POST   | [old_file_path,new_file_path]                                                     | uf  | update-file              |
-| /copy            | POST   | [source,dest] - copies `source` to `destination` (files)                          | cf  | create-file              |
-| /copy-folder     | POST   | [source,dest] - copies `source` to `destination` (folder)                         | cf  | create-file              |
-| /delete          | POST   | [path] - delete a file or a folder if empty                                       | df  | delete-file              |
-| /force-delete    | POST   | [path] - delete a file or a folder even if not empty                              | df  | delete-file              |
-|                  |        |                                                                                   |     |                          |
-| /add-user        | POST   | [username,permissions_string] - adds the user and responds with an API key        | cu  | create-user              |
-| /user/{username} | GET    | get user info (permissions)                                                       | ru  | read-user                |
-| /users           | GET    | get users list                                                                    | ru  | read-user                |
-| /update-user     | POST   | [username,permissions_string] - update the user                                   | uu  | update-users-permissions |
-| /delete-user     | POST   | [username] - deletes the user                                                     | du  | delete-user              |
+| ROUTE            | METHOD    | INFO                                                                              | ACL | PERMISSION               |
+|------------------|-----------|-----------------------------------------------------------------------------------|-----|--------------------------|
+| /info/{path}     | GET       | get information about a file or directory (size, mime-type, folder contents, etc) | rf  | read-file                |
+| /upload          | POST      | [file,path] - upload a file to path                                               | cf  | create-file              |
+| /add-folder      | POST      | [path] - creates a directory                                                      | cf  | create-file              |
+| /rename          | PUT       | [old_file_path,new_file_path]                                                     | uf  | update-file              |
+| /copy            | POST      | [source,dest] - copies `source` to `destination` (files)                          | cf  | create-file              |
+| /copy-folder     | POST      | [source,dest] - copies `source` to `destination` (folder)                         | cf  | create-file              |
+| /delete          | DELETE    | [path] - delete a file or a folder if empty                                       | df  | delete-file              |
+| /force-delete    | DELETE    | [path] - delete a file or a folder even if not empty                              | df  | delete-file              |
+|                  |           |                                                                                   |     |                          |
+| /add-user        | POST      | [username,permissions_string] - adds the user and responds with an API key        | cu  | create-user              |
+| /user/{username} | GET       | get user info (permissions)                                                       | ru  | read-user                |
+| /users           | GET       | get users list                                                                    | ru  | read-user                |
+| /update-user     | PUT       | [username,permissions_string] - update the user                                   | uu  | update-users-permissions |
+| /delete-user     | DELETE    | [username] - deletes the user                                                     | du  | delete-user              |
 
 ## limitations
 

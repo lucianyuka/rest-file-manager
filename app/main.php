@@ -6,10 +6,19 @@ namespace App;
 use App\Auth;
 use App\Response;
 use App\User;
-use Dotenv\Dotenv;
-use League\Flysystem\Adapter\Local as Adapter;
-use League\Flysystem\Filesystem;
+use SoftCreatR\MimeDetector\MimeDetector;
+use SoftCreatR\MimeDetector\MimeDetectorException;
+use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
+use Symfony\Component\Filesystem\Filesystem;
 
+/**
+ * Main.
+ *
+ * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+ * @since    v0.0.1
+ * @version    v1.0.0    Friday, March 29th, 2019.
+ * @global
+ */
 class Main
 {
     private $username;
@@ -19,17 +28,23 @@ class Main
     private $filesystem;
 
     private static $aclJSON;
-    private static $uploadsFolder;
+
+    private static $current_dir_path;
+    private static $uploadFolder;
     private static $tempFolder;
 
     public function __construct()
     {
-        $dotenv = Dotenv::create(dirname(__DIR__));
-        $dotenv->load();
-        $this::$aclJSON = dirname(__DIR__) . $_ENV['JSON_PATH'];
-        $this::$uploadsFolder = $_ENV['UPLOADS_FOLDER'];
-        $this::$tempFolder = $_ENV['TEMP_FOLDER'];
-        $this->filesystem = new Filesystem(new Adapter($this::$uploadsFolder));
+
+        $this::$aclJSON = __DIR__ . DIRECTORY_SEPARATOR . getenv('JSON_FILE');
+        $uploadsFolderName = getenv('UPLOADS_FOLDER');
+        $tempFolderName = getenv('TEMP_FOLDER');
+
+        $this::$current_dir_path = getcwd();
+        $this::$uploadFolder = $this::$current_dir_path . DIRECTORY_SEPARATOR . $uploadsFolderName;
+        $this::$tempFolder = $this::$uploadFolder . DIRECTORY_SEPARATOR . $tempFolderName;
+
+        $this->filesystem = new Filesystem();
         $this->response = new Response();
         $this->user = new User;
         $this->auth = new Auth;
@@ -37,318 +52,578 @@ class Main
 
     }
 
-    public function showInfo($data)
+    /**
+     * showInfo.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @param    string    $data
+     * @return    void
+     */
+    public function showInfo(string $data)
     {
-        if (!$this->user->hasThePerm($this->username, "read-file")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
+        $this->checkUserAccess("read-file");
+
+        if (!isset($data)) {
+            $this->finalResponse(415, "no data");
         }
 
-        $this->response->setStatus('200');
-        $this->response->setContent($data);
-        $this->response->finish();
+        $data = trim($data, "/");
+        $pathInput = $this::$uploadFolder . DIRECTORY_SEPARATOR . $data;
+
+        if (!$this->filesystem->exists($pathInput)) {
+            $this->finalResponse(400, "File/Path " . $data . " does Not Exist");
+        }
+
+        if (is_dir($pathInput)) {
+            $isDirEmpty = !(new \FilesystemIterator($pathInput))->valid();
+            $pathInfo = array(
+                "Path" => $data,
+                "Is Empty" => $isDirEmpty,
+                "Created on" => @date("d M Y h:i:s A", filectime($pathInput)),
+                "Last Accessed on" => @date("d M Y h:i:s A", fileatime($pathInput)),
+                "Last Modified on" => @date("d M Y h:i:s A", filemtime($pathInput)),
+                "Path Permissions" => getFilePerms($pathInput),
+            );
+
+            $this->finalResponse(200, "File Info", null, $pathInfo);
+
+        } elseif (is_file($pathInput)) {
+
+            $fileInfo = array(
+                "Filename" => basename($pathInput),
+                "FileSize" => FileSizeConvert($pathInput),
+                "File Type" => mime_content_type($pathInput),
+                "Path" => pathinfo($data, PATHINFO_DIRNAME),
+                "Last Accessed" => @date("d M Y h:i:s A", fileatime($pathInput)),
+                "Last Modified on" => @date("d M Y h:i:s A", filemtime($pathInput)),
+                "File Permissions" => getFilePerms($pathInput),
+            );
+
+            $this->finalResponse(200, "File Info", null, $fileInfo);
+        }
 
     }
 
+    /**
+     * upload.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @return    void
+     */
     public function upload()
     {
-        if (!$this->user->hasThePerm($this->username, "create-file")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
+
+        if (!isset(getAllHeaders()["Content-Type"])) {
+            $this->finalResponse(401, "Content-Type Missing");
+        } else {
+            $desiredHeader = getAllHeaders()["Content-Type"];
+            $data = explode(";", $desiredHeader);
+
+            if (strcasecmp($data[0], "multipart/form-data") !== 0) {
+                $this->finalResponse(401, "Only form-data Allowed for Upload");
+            }
         }
 
-        if (count($_POST) == 0 or count($_FILES) ==0) {
-            $this->response->setStatus('415');
-            $this->response->setContent("Invalid Format");
-            $this->response->finish();
+        $this->checkUserAccess("create-file");
+
+        if (count($_POST) == 0 or count($_FILES) == 0) {
+            $this->finalResponse(415, "Invalid Format");
         }
 
         if (!$_FILES['file']) {
-            $this->response->setStatus('400');
-            $this->response->setContent("Missing Property");
-            $this->response->finish();
+            $this->finalResponse(400, "Missing Property");
         }
 
-        /* array (size=5)
-        'name' => string 'v7bsnwekQ_I.jpg' (length=15)
-        'type' => string 'image/jpeg' (length=10)
-        'tmp_name' => string '/tmp/phpajFZqT' (length=14)
-        'error' => int 0
-        'size' => int 241673 */
-        //substr($_POST['path'], -1)!= '/'
-        $stream = fopen($_FILES['file']['tmp_name'], 'r+');
-        $this->filesystem->writeStream(
-            $_POST['path'] . DIRECTORY_SEPARATOR . $_FILES['file']['name'],
-            $stream
-        );
+        $fileInput = $_FILES['file'];
+        $tmpInput = $fileInput['tmp_name'];
+        $filenameInput = filter_filename($fileInput['name']);
+        $file_type = $fileInput['type'];
 
-        if (is_resource($stream)) {
-            fclose($stream);
+        $pathInput = filter_path($_POST['path']);
+
+        $tempFilePath = $this::$tempFolder . DIRECTORY_SEPARATOR . $filenameInput;
+        $targetFilePath = $this::$uploadFolder . DIRECTORY_SEPARATOR . $pathInput . DIRECTORY_SEPARATOR . $filenameInput;
+
+        $allowed_types = array("image/jpeg", "image/gif", "image/png", "image/svg", "application/pdf");
+
+        if (!in_array($file_type, $allowed_types)) {
+            $this->finalResponse(400, "Filetype Not Allowed");
         }
 
-        $this->response->setStatus('200');
-        $this->response->setContent("File " . $_FILES['file']['name']. " uploaded successfully to ".$_POST['path']);
-        $this->response->finish();
+        if ($this->filesystem->exists($targetFilePath)) {
+            $this->finalResponse(400, "File exsit");
+        }
+
+        deleteDirectory($this::$tempFolder, true);
+
+        try {
+            $this->filesystem->copy($tmpInput, $tempFilePath);
+        } catch (IOExceptionInterface $exception) {
+            //dd($exception);
+            $this->finalResponse(500, "An error occured while trying to load the given file!" . $exception);
+        }
+
+        $mimeDetector = new MimeDetector();
+
+        try {
+            $mimeDetector->setFile($tempFilePath);
+        } catch (MimeDetectorException $exception) {
+            $this->finalResponse(500, "An error occured while trying to load the given file!" . $exception);
+        }
+
+        $realMimeType = $mimeDetector->getFileType();
+
+        if ($realMimeType["mime"] != $file_type) {
+            deleteDirectory($this::$tempFolder, true);
+            $this->finalResponse(400, "Filetype Not Conform");
+        }
+
+        try {
+            $this->filesystem->copy($tempFilePath, $targetFilePath);
+        } catch (IOExceptionInterface $exception) {
+            //dd($exception);
+            $this->finalResponse(500, "Error creating directory at" . $exception);
+        }
+
+        deleteDirectory($this::$tempFolder, true);
+
+        $this->finalResponse(200, "File " . $filenameInput . " uploaded successfully to " . $pathInput);
 
     }
 
+    /**
+     * addFolder.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @return    void
+     */
     public function addFolder()
     {
-        if (!$this->user->hasThePerm($this->username, "create-file")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
-        }
-
-        $this->response->setStatus('200');
-        $this->response->setContent("OK");
-        $this->response->finish();
-
-    }
-
-    public function rename()
-    {
-        if (!$this->user->hasThePerm($this->username, "update-file")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
-        }
-
-        $this->response->setStatus('200');
-        $this->response->setContent("OK");
-        $this->response->finish();
-
-    }
-
-    public function copy()
-    {
-        if (!$this->user->hasThePerm($this->username, "update-file")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
-        }
-
-        $this->response->setStatus('200');
-        $this->response->setContent("OK");
-        $this->response->finish();
-
-    }
-
-    public function copyFolder()
-    {
-        if (!$this->user->hasThePerm($this->username, "update-file")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
-        }
-
-        $this->response->setStatus('200');
-        $this->response->setContent("OK");
-        $this->response->finish();
-
-    }
-
-    public function delete()
-    {
-        if (!$this->user->hasThePerm($this->username, "delete-file")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
-        }
-
-        $this->response->setStatus('200');
-        $this->response->setContent("OK");
-        $this->response->finish();
-
-    }
-
-    public function forceDelete()
-    {
-        if (!$this->user->hasThePerm($this->username, "delete-file")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
-        }
-
-        $this->response->setStatus('200');
-        $this->response->setContent("OK");
-        $this->response->finish();
-
-    }
-
-    public function addUser()
-    {
-        if (!$this->user->hasThePerm($this->username, "create-user")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
-        }
+        $this->checkContentTypeJson();
+        $this->checkUserAccess("create-file");
 
         $input = file_get_contents('php://input');
         $object = json_decode($input, true);
 
-        if ($object == null) {
-            $this->response->setStatus('415');
-            $this->response->setContent("Invalid Format");
-            $this->response->finish();
+        if (!isset($object)) {
+            $this->finalResponse(415, "no data");
         }
 
-        if (!array_key_exists("username", $object) or !array_key_exists("permissions_string", $object)) {
-            $this->response->setStatus('400');
-            $this->response->setContent("Missing Property");
-            $this->response->finish();
-        }
-        if ($this->user->isRegistredUser($object['username'])) {
-            $this->response->setStatus('400');
-            $this->response->setContent("Username Not Available");
-            $this->response->finish();
-        }
-        $perms_input = explode('-', $object['permissions_string']);
-
-        if (count($perms_input) != 8) {
-            $this->response->setStatus('400');
-            $this->response->setContent("Permissions too long or too short");
-            $this->response->finish();
+        if (!array_key_exists("path", $object)) {
+            $this->finalResponse(400, "Missing Property");
         }
 
-        $target_arr1 = explode('-', 'cf-rf-uf-df-cu-ru-uu-du');
-        //$target_arr2 = explode('-', 'xx-xx-xx-xx-xx-xx-xx-xx');
-        //$this->response->setContent(count(array_intersect($target_arr1, $perms_input)). " - ". count(array_intersect($target_arr2, $perms_input)) .' --- '.count(array_diff($target_arr1, $perms_input)). " - ". count(array_diff($target_arr2, $perms_input)));
-        foreach ($perms_input as $key => $val) {
-            foreach ($target_arr1 as $keyt1 => $valuet1) {
-                if ($key == $keyt1) {
-                    if ($val != $valuet1 and $val != 'xx') {
-                        $this->response->setStatus('400');
-                        $this->response->setContent("Permissions Not Accurate");
-                        $this->response->finish();
-                    }
+        $pathInput = $this::$uploadFolder . DIRECTORY_SEPARATOR . $object['path'];
 
-                }
+        if ($this->filesystem->exists($pathInput)) {
+            $this->finalResponse(400, "Path Exists");
+        }
+
+        //make a new directory
+        try {
+            $old = umask(0);
+            $this->filesystem->mkdir($pathInput, 0775);
+            $this->filesystem->chown($pathInput, "www-data");
+            $this->filesystem->chgrp($pathInput, "www-data");
+            umask($old);
+        } catch (IOExceptionInterface $exception) {
+            $this->finalResponse(400, "Error creating directory at" . $exception->getPath());
+        }
+
+        $this->finalResponse(200, "Path " . $pathInput . " was successfully created!");
+
+    }
+
+    /**
+     * rename.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @return    void
+     */
+    public function rename()
+    {
+        $this->checkContentTypeJson();
+        $this->checkUserAccess("update-file");
+
+        $input = file_get_contents('php://input');
+        $object = json_decode($input, true);
+
+        if (!isset($object)) {
+            $this->finalResponse(415, "no data");
+        }
+
+        if (!array_key_exists("old_file_path", $object) or !array_key_exists("new_file_path", $object)) {
+            $this->finalResponse(400, "Missing Property");
+        }
+
+        $oldPathInput = $this::$uploadFolder . DIRECTORY_SEPARATOR . $object['old_file_path'];
+        $newPathInput = $this::$uploadFolder . DIRECTORY_SEPARATOR . $object['new_file_path'];
+
+        if (!$this->filesystem->exists($oldPathInput)) {
+            $this->finalResponse(400, "Path " . $oldPathInput . " does Not Exist");
+        }
+
+        if ($this->filesystem->exists($newPathInput)) {
+            $this->finalResponse(400, "Path " . $newPathInput . " Exists");
+        }
+
+        try {
+            $this->filesystem->rename($oldPathInput, $newPathInput);
+        } catch (IOExceptionInterface $exception) {
+            $this->finalResponse(400, "Error creating directory at" . $exception->getPath());
+        }
+
+        $this->finalResponse(200, "Path " . $oldPathInput . " successfully renamed to " . $newPathInput);
+
+    }
+
+    /**
+     * copy.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @return    void
+     */
+    public function copy()
+    {
+        $this->checkContentTypeJson();
+        $this->checkUserAccess("update-file");
+
+        $input = file_get_contents('php://input');
+        $object = json_decode($input, true);
+
+        if (!isset($object)) {
+            $this->finalResponse(415, "no data");
+        }
+
+        if (!array_key_exists("source", $object) or !array_key_exists("dest", $object)) {
+            $this->finalResponse(400, "Missing Property");
+        }
+
+        $object['source'] = trim($object['source'], "/");
+        $sourcePathInput = $this::$uploadFolder . DIRECTORY_SEPARATOR . $object['source'];
+        $destPathInput = $this::$uploadFolder . DIRECTORY_SEPARATOR . $object['dest'];
+        $fileSource = basename($object['source']);
+        $pathSource = pathinfo($object['source'], PATHINFO_DIRNAME);
+
+        if (!is_file($destPathInput)) {
+            $this->finalResponse(400, $object['source'] . " Is Not a File");
+        }
+
+        if (!is_dir($destPathInput)) {
+            $this->finalResponse(400, $object['dest'] . " Is Not a Path");
+        }
+
+        if (!$this->filesystem->exists($sourcePathInput)) {
+            $this->finalResponse(400, "File " . $object['source'] . " does Not Exist");
+        }
+
+        if (!$this->filesystem->exists($destPathInput)) {
+            $this->finalResponse(400, "Path " . $object['dest'] . " does Not Exist");
+        }
+
+        if ($this->filesystem->exists($destPathInput . DIRECTORY_SEPARATOR . $fileSource)) {
+            $this->finalResponse(400, "File " . $fileSource . " Exists in folder " . $object['dest']);
+        }
+
+        try {
+            $this->filesystem->copy($sourcePathInput, $destPathInput . DIRECTORY_SEPARATOR . $fileSource);
+        } catch (IOExceptionInterface $exception) {
+            //dd($exception);
+            $this->finalResponse(400, "Error creating directory at" . $exception);
+        }
+
+        $this->finalResponse(200, "File " . $fileSource . " copied successfully from " . $pathSource . "  to " . $destPathInput);
+
+    }
+
+    /**
+     * copyFolder.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @return    void
+     */
+    public function copyFolder()
+    {
+        $this->checkContentTypeJson();
+        $this->checkUserAccess("update-file");
+
+        $input = file_get_contents('php://input');
+        $object = json_decode($input, true);
+
+        if (!isset($object)) {
+            $this->finalResponse(415, "no data");
+        }
+
+        if (!array_key_exists("source", $object) or !array_key_exists("dest", $object)) {
+            $this->finalResponse(400, "Missing Property");
+        }
+
+        $object['source'] = trim($object['source'], "/");
+        $sourcePathInput = $this::$uploadFolder . DIRECTORY_SEPARATOR . $object['source'];
+        $destPathInput = $this::$uploadFolder . DIRECTORY_SEPARATOR . $object['dest'];
+
+        if (!is_dir($sourcePathInput)) {
+            $this->finalResponse(400, $object['source'] . " Is Not a Path");
+        }
+
+        if (!is_dir($destPathInput)) {
+            $this->finalResponse(400, $object['dest'] . " Is Not a Path");
+        }
+
+        if (!$this->filesystem->exists($sourcePathInput)) {
+            $this->finalResponse(400, "File " . $object['source'] . " does Not Exist");
+        }
+
+        if (!$this->filesystem->exists($destPathInput)) {
+            $this->finalResponse(400, "Path " . $object['dest'] . " does Not Exist");
+        }
+
+        try {
+            $this->filesystem->mirror($sourcePathInput, $destPathInput);
+        } catch (IOExceptionInterface $exception) {
+            ($exception);
+            $this->finalResponse(400, "Error creating directory at" . $exception);
+        }
+
+        $this->finalResponse(200, "Content of Path " . $object['source'] . " successfully copied to " . $object['dest']);
+
+    }
+
+    /**
+     * delete.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @return    void
+     */
+    public function delete()
+    {
+        $this->checkContentTypeJson();
+        $this->checkUserAccess("delete-file");
+
+        $input = file_get_contents('php://input');
+        $object = json_decode($input, true);
+
+        if (!isset($object)) {
+            $this->finalResponse(415, "no data");
+        }
+
+        if (!array_key_exists("path", $object)) {
+            $this->finalResponse(400, "Missing Property");
+        }
+
+        $object['path'] = trim($object['path'], "/");
+        $pathInput = $this::$uploadFolder . DIRECTORY_SEPARATOR . $object['path'];
+
+        if (!$this->filesystem->exists($pathInput)) {
+            $this->finalResponse(400, "File " . $object['path'] . " does Not Exist");
+        }
+
+        if (is_dir($pathInput)) {
+            //$this->finalResponse(400, $object['path'] . " Is Not a Path");
+            $isDirEmpty = !(new \FilesystemIterator($pathInput))->valid();
+            if (!$isDirEmpty) {
+                $this->finalResponse(400, "Path " . $object['path'] . " Is Not Empty");
             }
+            try {
+                $this->filesystem->remove($pathInput);
+            } catch (IOExceptionInterface $exception) {
+                ($exception);
+                $this->finalResponse(400, "Error creating directory at" . $exception);
+            }
+            $this->finalResponse(200, "Path " . $object['path'] . " was successfully deleted!");
+        } elseif (is_file($pathInput)) {
+            try {
+                $this->filesystem->remove($pathInput);
+            } catch (IOExceptionInterface $exception) {
+                ($exception);
+                $this->finalResponse(400, "Error creating directory at" . $exception);
+            }
+            $this->finalResponse(200, "File " . $object['path'] . " was successfully deleted!");
         }
 
-        $json_a = $this->jsonToArray($this::$aclJSON);
+    }
+
+    /**
+     * forceDelete.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @return    void
+     */
+    public function forceDelete()
+    {
+        $this->checkContentTypeJson();
+        $this->checkUserAccess("delete-file");
+
+        $input = file_get_contents('php://input');
+        $object = json_decode($input, true);
+
+        if (!isset($object)) {
+            $this->finalResponse(415, "no data");
+        }
+
+        if (!array_key_exists("path", $object)) {
+            $this->finalResponse(400, "Missing Property");
+        }
+
+        $object['path'] = trim($object['path'], "/");
+        $pathInput = $this::$uploadFolder . DIRECTORY_SEPARATOR . $object['path'];
+
+        if (!$this->filesystem->exists($pathInput)) {
+            $this->finalResponse(400, "File " . $object['path'] . " does Not Exist");
+        }
+
+        if (is_dir($pathInput)) {
+            try {
+                $this->filesystem->remove($pathInput);
+            } catch (IOExceptionInterface $exception) {
+                ($exception);
+                $this->finalResponse(400, "Error creating directory at" . $exception);
+            }
+            $this->finalResponse(200, "Path " . $object['path'] . " was successfully deleted!");
+        } elseif (is_file($pathInput)) {
+            try {
+                $this->filesystem->remove($pathInput);
+            } catch (IOExceptionInterface $exception) {
+                ($exception);
+                $this->finalResponse(400, "Error creating directory at" . $exception);
+            }
+            $this->finalResponse(200, "File " . $object['path'] . " was successfully deleted!");
+        }
+
+    }
+
+    /**
+     * addUser.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Thursday, March 28th, 2019.
+     * @access    public
+     * @return    void
+     */
+    public function addUser()
+    {
+        $this->checkContentTypeJson();
+        $this->checkUserAccess("create-user");
+
+        $input = file_get_contents('php://input');
+        $object = json_decode($input, true);
+
+        $this->checkResponseData($object, true);
+        $this->checkPermInput($object);
+
+        $json_a = jsonToArray($this::$aclJSON);
 
         $output = array_merge($json_a, array(strtolower($object['username']) => $object['permissions_string']));
         file_put_contents($this::$aclJSON, json_encode($output, JSON_PRETTY_PRINT));
 
         $token_generated = $this->auth->generateToken($object['username']);
 
-        $this->response->setStatus('200');
-        $this->response->setUserCred($token_generated);
-        $this->response->setContent("User " . $object['username'] . " with permissions " . $object['permissions_string'] . " was added successfully");
-        $this->response->finish();
+        $this->finalResponse(200, "User " . $object['username'] . " with permissions " . $object['permissions_string'] . " was added successfully", $token_generated);
 
     }
 
-    public function userInfo($data)
+    /**
+     * userInfo.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @param    string    $data
+     * @return    void
+     */
+    public function userInfo(string $data)
     {
-        if (!$this->user->hasThePerm($this->username, "read-user")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
-        }
+        $this->checkUserAccess("read-user");
 
         if (!$this->user->isRegistredUser($data)) {
-            $this->response->setStatus('400');
-            $this->response->setContent("Username Not Available");
-            $this->response->finish();
+            $this->finalResponse(400, "Username Not Available");
         }
 
-        $json_a = $this->jsonToArray($this::$aclJSON);
+        $json_a = jsonToArray($this::$aclJSON);
 
         foreach ($json_a as $key => $val) {
             if ($key == strtolower($data)) {
-                $this->response->setStatus('200');
-                $this->response->setContent("User " . $key . " has the following permissions " . $val);
-                $this->response->finish();
+                $this->finalResponse(200, "User " . $key . " has the following permissions " . $val);
             }
         }
 
     }
 
+    /**
+     * listUsers.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @return    void
+     */
     public function listUsers()
     {
-        if (!$this->user->hasThePerm($this->username, "read-user")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
-        }
+        $this->checkUserAccess("read-user");
 
-        $json_a = $this->jsonToArray($this::$aclJSON);
+        $json_a = jsonToArray($this::$aclJSON);
         $str = '';
         foreach ($json_a as $key => $val) {
             $str .= $key . ", ";
         }
 
-        $this->response->setStatus('200');
-        $this->response->setContent("There are " . count($json_a) . " Users : " . rtrim($str, ', '));
-        $this->response->finish();
+        $this->finalResponse(200, "There are " . count($json_a) . " Users : " . rtrim($str, ', '));
 
     }
 
+    /**
+     * updateUser.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @return    void
+     */
     public function updateUser()
     {
-        if (!$this->user->hasThePerm($this->username, "update-users-permissions")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
-        }
+        $this->checkContentTypeJson();
+        $this->checkUserAccess("update-users-permissions");
 
         $input = file_get_contents('php://input');
-        //parse_str(file_get_contents("php://input"), $input);
-
         $object = json_decode($input, true);
 
-        if ($object == null) {
-            $this->response->setStatus('415');
-            $this->response->setContent("Invalid Format");
-            $this->response->finish();
-        }
+        $this->checkResponseData($object, true);
+        $this->checkPermInput($object);
 
-        if (!array_key_exists("username", $object) or !array_key_exists("permissions_string", $object)) {
-            $this->response->setStatus('400');
-            $this->response->setContent("Missing Property");
-            $this->response->finish();
-        }
-
-        if (!$this->user->isRegistredUser($object['username'])) {
-            $this->response->setStatus('400');
-            $this->response->setContent("Username Not Available");
-            $this->response->finish();
-        }
-        $perms_input = explode('-', $object['permissions_string']);
-
-        if (count($perms_input) != 8) {
-            $this->response->setStatus('400');
-            $this->response->setContent("Permissions too long or too short");
-            $this->response->finish();
-        }
-
-        $target_arr1 = explode('-', 'cf-rf-uf-df-cu-ru-uu-du');
-
-        foreach ($perms_input as $key => $val) {
-            foreach ($target_arr1 as $keyt1 => $valuet1) {
-                if ($key == $keyt1) {
-                    if ($val != $valuet1 and $val != 'xx') {
-                        $this->response->setStatus('400');
-                        $this->response->setContent("Permissions Not Accurate");
-                        $this->response->finish();
-                    }
-                }
-            }
-        }
-
-        $json_a = $this->jsonToArray($this::$aclJSON);
+        $json_a = jsonToArray($this::$aclJSON);
 
         foreach ($json_a as $key => &$val) {
             if ($key == strtolower($object['username'])) {
                 if ($val == $object['permissions_string']) {
-                    $this->response->setStatus('200');
-                    $this->response->setContent("Nothing to Update");
-                    $this->response->finish();
+                    $this->finalResponse(200, "Nothing to Update");
                 } else {
                     $val = $object['permissions_string'];
                 }
@@ -357,60 +632,170 @@ class Main
 
         file_put_contents($this::$aclJSON, json_encode($json_a, JSON_PRETTY_PRINT));
 
-        $this->response->setStatus('200');
-        $this->response->setContent("User " . $object['username'] . " was succefully updated with the following permissions " . $object['permissions_string']);
-        $this->response->finish();
+        $this->finalResponse(200, "User " . $object['username'] . " was succefully updated with the following permissions " . $object['permissions_string']);
 
     }
 
+    /**
+     * deleteUser.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    public
+     * @return    void
+     */
     public function deleteUser()
     {
-        if (!$this->user->hasThePerm($this->username, "delete-user")) {
-            $this->response->setStatus('401');
-            $this->response->setContent("no authorization");
-            $this->response->finish();
-        }
+        $this->checkContentTypeJson();
+        $this->checkUserAccess("delete-user");
 
         $input = file_get_contents('php://input');
         //parse_str(file_get_contents("php://input"), $input);
-
         $object = json_decode($input, true);
 
-        if ($object == null) {
-            $this->response->setStatus('415');
-            $this->response->setContent("Invalid Format");
-            $this->response->finish();
-        }
+        //dd(gettype($object));
+        $this->checkResponseData($object);
 
-        if (!array_key_exists("username", $object)) {
-            $this->response->setStatus('400');
-            $this->response->setContent("Missing Property");
-            $this->response->finish();
-        }
-
-        if (!$this->user->isRegistredUser($object['username'])) {
-            $this->response->setStatus('400');
-            $this->response->setContent("Username Not Available");
-            $this->response->finish();
-        }
-
-        $json_a = $this->jsonToArray($this::$aclJSON);
+        $json_a = jsonToArray($this::$aclJSON);
 
         unset($json_a[strtolower($object['username'])]);
 
         file_put_contents($this::$aclJSON, json_encode($json_a, JSON_PRETTY_PRINT));
 
-        $this->response->setStatus('200');
-        $this->response->setContent("User " . $object['username'] . " was succefully deleted!");
-        $this->response->finish();
+        $this->finalResponse(200, "User " . $object['username'] . " was succefully deleted!");
 
     }
 
-    private function jsonToArray($file)
+    /**
+     * checkResponseData.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    private
+     * @param    array      $object
+     * @param    boolean    $checkPerm    Default: false
+     * @return    void
+     */
+    private function checkResponseData(array $object, bool $checkPerm = false): void
     {
-        $jsonFile = file_get_contents($file);
-        $json_a = json_decode($jsonFile, true);
-        return $json_a;
+
+        if (!isset($object)) {
+            $this->finalResponse(415, "no data");
+        }
+
+        if ($checkPerm) {
+            if (!array_key_exists("username", $object) or !array_key_exists("permissions_string", $object)) {
+                $this->finalResponse(400, "Missing3 Property");
+            }
+        }
+
+        if (!array_key_exists("username", $object)) {
+            $this->finalResponse(400, "Missing Property");
+        }
+
+        if (!$this->user->isRegistredUser($object['username'])) {
+            $this->finalResponse(400, "Username Not Available");
+        }
+
+    }
+
+    /**
+     * checkContentTypeJson.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    private
+     * @return    void
+     */
+    private function checkContentTypeJson()
+    {
+
+        if (!isset(getAllHeaders()["Content-Type"])) {
+            $this->finalResponse(401, "Content-Type Missing");
+        } else {
+            $desiredHeader = getAllHeaders()["Content-Type"];
+            if ($desiredHeader !== 'application/json') {
+                $this->finalResponse(401, "Only JSON Allowed");
+            }
+        }
+    }
+
+    /**
+     * checkUserAccess.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    private
+     * @param    string    $perm
+     * @return    void
+     */
+    private function checkUserAccess(string $perm)
+    {
+        if (!$this->user->hasThePerm($this->username, $perm)) {
+            $this->finalResponse(401, "no authorization");
+        }
+
+    }
+
+    /**
+     * finalResponse.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    private
+     * @param    int       $status
+     * @param    string    $content
+     * @param    string    $apiKey          Default: null
+     * @param    array     $filePathInfo    Default: []
+     * @return    void
+     */
+    private function finalResponse(int $status, string $content, string $apiKey = null, array $filePathInfo = [])
+    {
+        $this->response->setStatus($status);
+        if ($apiKey) {
+            $this->response->setUserCred($apiKey);
+        }
+        if ($filePathInfo) {
+            $this->response->setfilePathInfo($filePathInfo);
+        }
+        $this->response->setContent($content);
+        $this->response->finish();
+    }
+
+    /**
+     * checkPermInput.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @access    private
+     * @param    array    $object
+     * @return    void
+     */
+    private function checkPermInput(array $object)
+    {
+        $perms_input = explode('-', $object['permissions_string']);
+
+        if (count($perms_input) != 8) {
+            $this->finalResponse(400, "Permissions too long or too short");
+        }
+        $target_arr = explode('-', 'cf-rf-uf-df-cu-ru-uu-du');
+        //$target_arr2 = explode('-', 'xx-xx-xx-xx-xx-xx-xx-xx');
+        //$this->response->setContent(count(array_intersect($target_arr1, $perms_input)). " - ". count(array_intersect($target_arr2, $perms_input)) .' --- '.count(array_diff($target_arr1, $perms_input)). " - ". count(array_diff($target_arr2, $perms_input)));
+        foreach ($perms_input as $key => $val) {
+            foreach ($target_arr as $prop => $data) {
+                if ($key == $prop) {
+                    if ($val != $data and $val != 'xx') {
+                        $this->finalResponse(400, "Permissions Not Accurate");
+                    }
+                }
+            }
+        }
     }
 
 }

@@ -20,6 +20,7 @@ class Response
      */
     private $status;
     private $userCred;
+    private $filePathInfo;
     private $content;
 
     /**
@@ -29,6 +30,7 @@ class Response
     {
         $this->setStatus(200);
         $this->setUserCred('');
+        $this->setfilePathInfo([]);
         $this->setContent('');
     }
 
@@ -47,6 +49,14 @@ class Response
                     'content' => $this->content,
                 )
             );
+        } elseif ($this->filePathInfo != []) {
+            $json = json_encode(
+                array(
+                    'status' => $this->status,
+                    'content' => $this->content,
+                    'info' => $this->filePathInfo,
+                )
+            );
         } else {
             $json = json_encode(
                 array(
@@ -54,6 +64,7 @@ class Response
                     'content' => $this->content,
                 )
             );
+
         }
 
         header('Cache-Control: no-cache, must-revalidate');
@@ -72,7 +83,7 @@ class Response
      * @var String $status
      * @var String $statusText
      */
-    final public function setStatus($statusCode)
+    final public function setStatus(int $statusCode)
     {
         // Long list. Just remember these though: 200, 201, 204, (301, 302,) 400, 401, 403, 404, 500, 501
         $codes = array(
@@ -136,6 +147,14 @@ class Response
     }
 
     /**
+     * @var        function    setUserCred($userCred)
+     */
+    final public function setfilePathInfo($filePathInfo)
+    {
+        $this->filePathInfo = $filePathInfo;
+    }
+
+    /**
      * Sets the data to output
      * @var array
      */
@@ -143,4 +162,5 @@ class Response
     {
         $this->content = $content;
     }
+
 }

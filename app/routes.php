@@ -1,9 +1,13 @@
 <?php
-//declare (strict_types = 1);
+declare (strict_types = 1);
+date_default_timezone_set('Europe/Bucharest');
 
 use App\Auth;
 use App\Response;
 use Bramus\Router\Router;
+use Dotenv\Dotenv;
+$dotenv = Dotenv::create(dirname(__DIR__));
+$dotenv->load();
 
 $response = new Response();
 $auth = new Auth;
@@ -12,20 +16,25 @@ $auth = new Auth;
 $router = new Router();
 $router->setNamespace('\App');
 
-$router->before('GET|POST|PUT|DELETE', '/.*', function () use ($auth, $response) {
-    if (!$auth->validateToken()) {
-        $response->setStatus(401);
-        $response->setContent('Missing1 or invalid API Key.');
-        $response->finish();
+$router->before(
+    'GET|POST|PUT|DELETE', '/.*',
+    function () use ($auth, $response) {
+        if (!$auth->validateToken()) {
+            $response->setStatus(401);
+            $response->setContent('Missing1 or invalid API Key.');
+            $response->finish();
+        }
     }
-});
+);
 
 // Override the standard router 404
-$router->set404(function () use ($response) {
-    $response->setStatus('404');
-    $response->setContent('Invalid resource');
-    $response->finish();
-});
+$router->set404(
+    function () use ($response) {
+        $response->setStatus(404);
+        $response->setContent('Invalid resource');
+        $response->finish();
+    }
+);
 
 // Define our routes
 $router->get('/info/{path}', 'Main@showInfo');

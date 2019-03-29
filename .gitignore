@@ -7,7 +7,7 @@
 /vendor
 .env
 /.history
-
+.phpunit*
 # Config
 .env*
 !.env.example

@@ -3,8 +3,6 @@ declare (strict_types = 1);
 
 namespace App;
 
-use Dotenv\Dotenv;
-
 /**
  * User.
  *
@@ -16,14 +14,8 @@ use Dotenv\Dotenv;
 class User
 {
 
-    /**
-     * @var        static    $aclJSON
-     */
     private static $aclJSON;
 
-    /**
-     * @var        static    $permissions
-     */
     private static $permissions = array(
         "cf" => "create-file",
         "rf" => "read-file",
@@ -45,14 +37,13 @@ class User
      */
     public function __construct()
     {
-        $dotenv = Dotenv::create(dirname(__DIR__));
-        $dotenv->load();
-        $this::$aclJSON = dirname(__DIR__) . $_ENV['JSON_PATH'];
+
+        $this::$aclJSON = __DIR__ . DIRECTORY_SEPARATOR . getenv('JSON_FILE');
 
     }
 
     /**
-     * Json2Array.
+     * createUsersACL.
      *
      * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
      * @since    v0.0.1
@@ -60,12 +51,10 @@ class User
      * @access    private
      * @return    array
      */
-    private function Json2Array()
+    private function createUsersACL(): array
     {
-        $aclJSON = $this::$aclJSON;
 
-        $jsonFile = file_get_contents($aclJSON);
-        $json_a = json_decode($jsonFile, true);
+        $json_a = jsonToArray($this::$aclJSON);
 
         foreach ($json_a as $key => $val) {
             $arr[] = array($key => $val);
@@ -86,22 +75,24 @@ class User
                 }
             }
         }
+
         return $acl_a;
     }
 
     /**
-     * is_permitted_user.
+     * isRegistredUser.
      *
      * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
      * @since    v0.0.1
-     * @version    v1.0.0    Monday, March 18th, 2019.
+     * @version    v1.0.0    Friday, March 29th, 2019.
      * @access    public
-     * @param    mixed    $user
-     * @return    boolean
+     * @param    string    $user
+     * @return    bool
      */
-    public function isRegistredUser($user)
+    public function isRegistredUser(string $user): bool
     {
-        $array = $this->Json2Array();
+        $array = $this->createUsersACL();
+
         if (array_search(strtolower($user), array_column($array, 'username')) !== false) {
             return true;
         } else {
@@ -115,20 +106,20 @@ class User
      *
      * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
      * @since    v0.0.1
-     * @version    v1.0.0    Monday, March 18th, 2019.
+     * @version    v1.0.0    Friday, March 29th, 2019.
      * @access    public
-     * @param    mixed    $user
-     * @param    mixed    $perm
-     * @return    boolean
+     * @param    string    $user
+     * @param    string    $perm
+     * @return    bool
      */
-    public function hasThePerm($user, $perm)
+    public function hasThePerm(string $user, string $perm): bool
     {
-        $array = $this->Json2Array();
+        $array = $this->createUsersACL();
         foreach ($array as $userperm) {
             if ($userperm['username'] != strtolower($user)) {
                 continue;
             } else {
-                if ($userperm['username'] == strtolower($user) and $this->in_array_r($perm, $userperm['permissions'])) {
+                if ($userperm['username'] == strtolower($user) and in_array_r($perm, $userperm['permissions'])) {
                     return true;
                 } else {
                     return false;
@@ -138,16 +129,6 @@ class User
 
         }
 
-    }
-
-    private function in_array_r($needle, $haystack, $strict = false)
-    {
-        foreach ($haystack as $item) {
-            if (($strict ? $item === $needle : $item == $needle) || (is_array($item) && $this->in_array_r($needle, $item, $strict))) {
-                return true;
-            }
-        }
-        return false;
     }
 
 }
