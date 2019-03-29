@@ -7,14 +7,14 @@ if (!function_exists('getAllHeaders')) {
      * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
      * @since    v0.0.1
      * @version    v1.0.0    Friday, March 29th, 2019.
-     * @return    mixed
+     * @return    array
      */
     function getAllHeaders(): array
     {
         $headers = [];
         foreach ($_SERVER as $name => $value) {
             if (substr($name, 0, 5) == 'HTTP_') {
-                $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+                $headers[str_replace(' ', '-', ucwords(convertToLowerCase(str_replace('_', ' ', substr($name, 5)))))] = $value;
             }
         }
         if (function_exists('apache_request_headers')) {
@@ -77,7 +77,7 @@ if (!function_exists('filter_path')) {
      * @since    v0.0.1
      * @version    v1.0.0    Friday, March 29th, 2019.
      * @param    string    $path
-     * @return    mixed
+     * @return    string
      */
     function filter_path(string $path): string
     {
@@ -91,7 +91,6 @@ if (!function_exists('filter_path')) {
             [{}^\~`]                 # URL unsafe characters https://www.ietf.org/rfc/rfc1738.txt
             ~x',
             '-', $path);
-        $path = mb_strtolower($path, mb_detect_encoding($path));
         $path = trim($path);
         return $path;
     }
@@ -107,11 +106,12 @@ if (!function_exists('filter_filename')) {
      * @version    v1.0.0    Friday, March 29th, 2019.
      * @param    string     $filename
      * @param    boolean    $beautify    Default: true
-     * @return    mixed
+     * @return    string
      */
     function filter_filename(string $filename, bool $beautify = true): string
     {
         // sanitize filename
+        $filename = htmlspecialchars($filename); // best to be carefull
         $filename = preg_replace(
             '~
             [<>:"/\\|?*]|            # file system reserved https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
@@ -127,7 +127,6 @@ if (!function_exists('filter_filename')) {
         if ($beautify) {
             $filename = beautify_filename($filename);
         }
-
         // maximize filename length to 255 bytes http://serverfault.com/a/9548/44086
         $ext = pathinfo($filename, PATHINFO_EXTENSION);
         $filename = mb_strcut(pathinfo($filename, PATHINFO_FILENAME), 0, 255 - ($ext ? strlen($ext) + 1 : 0), mb_detect_encoding($filename)) . ($ext ? '.' . $ext : '');
@@ -143,7 +142,7 @@ if (!function_exists('beautify_filename')) {
      * @since    v0.0.1
      * @version    v1.0.0    Friday, March 29th, 2019.
      * @param    string    $filename
-     * @return    mixed
+     * @return    string
      */
     function beautify_filename(string $filename): string
     {
@@ -162,12 +161,29 @@ if (!function_exists('beautify_filename')) {
             // "file...name..zip" becomes "file.name.zip"
             '/\.{2,}/',
         ), '.', $filename);
-        // lowercase for windows/unix interoperability http://support.microsoft.com/kb/100625
-        $filename = mb_strtolower($filename, mb_detect_encoding($filename));
         // ".file-name.-" becomes "file-name"
         $filename = trim($filename, '.-');
         return $filename;
     }
+}
+
+if (!function_exists('convertToLowerCase')) {
+    /**
+     * convertToLowerCase.
+     *
+     * @author	Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since	v0.0.1
+     * @version	v1.0.0	Friday, March 29th, 2019.
+     * @param	string	$str
+     * @return	string
+     */
+    function convertToLowerCase(string $str):string
+    {
+        // lowercase for windows/unix interoperability http://support.microsoft.com/kb/100625
+        $str = mb_strtolower($str, mb_detect_encoding($str));
+        return $str;
+    }
+
 }
 
 if (!function_exists('delete')) {
@@ -177,7 +193,7 @@ if (!function_exists('delete')) {
      * @param  string|array  $paths
      * @return bool
      */
-    function delete($paths)
+    function delete(string $paths):bool
     {
         $paths = is_array($paths) ? $paths : func_get_args();
         $success = true;

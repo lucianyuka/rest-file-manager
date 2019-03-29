@@ -71,6 +71,7 @@ class Main
         }
 
         $data = trim($data, "/");
+        $data =filter_path($data);
         $pathInput = $this::$uploadFolder . DIRECTORY_SEPARATOR . $data;
 
         if (!$this->filesystem->exists($pathInput)) {
@@ -120,27 +121,44 @@ class Main
     {
 
         if (!isset(getAllHeaders()["Content-Type"])) {
-            $this->finalResponse(401, "Content-Type Missing");
+            $this->finalResponse(415, "Content-Type Missing");
         } else {
             $desiredHeader = getAllHeaders()["Content-Type"];
             $data = explode(";", $desiredHeader);
 
             if (strcasecmp($data[0], "multipart/form-data") !== 0) {
-                $this->finalResponse(401, "Only form-data Allowed for Upload");
+                $this->finalResponse(415, "Only form-data Allowed for Upload");
             }
         }
 
         $this->checkUserAccess("create-file");
 
         if (count($_POST) == 0 or count($_FILES) == 0) {
-            $this->finalResponse(415, "Invalid Format");
+            $this->finalResponse(422, "Invalid Format");
+        }
+
+        if (!array_key_exists("file", $_FILES)) {
+            $this->finalResponse(422, "Missing Property");
+        }
+
+        if (!array_key_exists("path", $_POST)) {
+            $this->finalResponse(422, "Missing Property");
+        }
+
+        if (count($_FILES) != 1) {
+            $this->finalResponse(412, "Uploading Multiple Files is Not Allowed");
         }
 
         if (!$_FILES['file']) {
-            $this->finalResponse(400, "Missing Property");
+            $this->finalResponse(412, "Missing Property");
         }
 
         $fileInput = $_FILES['file'];
+
+        if(!file_exists($fileInput['tmp_name']) || !is_uploaded_file($fileInput['tmp_name'])) {
+            $this->finalResponse(412, "Missing Property");
+        }
+
         $tmpInput = $fileInput['tmp_name'];
         $filenameInput = filter_filename($fileInput['name']);
         $file_type = $fileInput['type'];
@@ -193,7 +211,7 @@ class Main
 
         deleteDirectory($this::$tempFolder, true);
 
-        $this->finalResponse(200, "File " . $filenameInput . " uploaded successfully to " . $pathInput);
+        $this->finalResponse(201, "File " . $filenameInput . " uploaded successfully to " . $pathInput);
 
     }
 
@@ -239,7 +257,7 @@ class Main
             $this->finalResponse(400, "Error creating directory at" . $exception->getPath());
         }
 
-        $this->finalResponse(200, "Path " . $pathInput . " was successfully created!");
+        $this->finalResponse(201, "Path " . $pathInput . " was successfully created!");
 
     }
 
@@ -538,12 +556,12 @@ class Main
 
         $json_a = jsonToArray($this::$aclJSON);
 
-        $output = array_merge($json_a, array(strtolower($object['username']) => $object['permissions_string']));
+        $output = array_merge($json_a, array(convertToLowerCase($object['username']) => $object['permissions_string']));
         file_put_contents($this::$aclJSON, json_encode($output, JSON_PRETTY_PRINT));
 
         $token_generated = $this->auth->generateToken($object['username']);
 
-        $this->finalResponse(200, "User " . $object['username'] . " with permissions " . $object['permissions_string'] . " was added successfully", $token_generated);
+        $this->finalResponse(201, "User " . $object['username'] . " with permissions " . $object['permissions_string'] . " was added successfully", $token_generated);
 
     }
 
@@ -561,15 +579,33 @@ class Main
     {
         $this->checkUserAccess("read-user");
 
+        if (!isset($data)) {
+            $this->finalResponse(415, "no data");
+        }
+
+        $data = trim($data, "/");
+        $data =filter_path($data);
+
         if (!$this->user->isRegistredUser($data)) {
             $this->finalResponse(400, "Username Not Available");
         }
 
         $json_a = jsonToArray($this::$aclJSON);
 
-        foreach ($json_a as $key => $val) {
-            if ($key == strtolower($data)) {
-                $this->finalResponse(200, "User " . $key . " has the following permissions " . $val);
+        $perm_array = array();
+
+        foreach ($json_a as $id => $value) {
+            if ($id == convertToLowerCase($data)) {
+                $codes_arr = explode('-', $value);
+                foreach ($codes_arr as $key => $val) {
+                    foreach ($this->user::$permissions as $code => $permision_string) {
+                        if ($val == $code) {
+                            $perm_array[] =  $permision_string;
+                        }
+                    }
+                }
+                $str = implode(", ", $perm_array);
+                $this->finalResponse(200, "User " . $key . " has the following permissions : " . rtrim($str, ', '));
             }
         }
 
@@ -621,7 +657,7 @@ class Main
         $json_a = jsonToArray($this::$aclJSON);
 
         foreach ($json_a as $key => &$val) {
-            if ($key == strtolower($object['username'])) {
+            if ($key == convertToLowerCase($object['username'])) {
                 if ($val == $object['permissions_string']) {
                     $this->finalResponse(200, "Nothing to Update");
                 } else {
@@ -659,7 +695,7 @@ class Main
 
         $json_a = jsonToArray($this::$aclJSON);
 
-        unset($json_a[strtolower($object['username'])]);
+        unset($json_a[convertToLowerCase($object['username'])]);
 
         file_put_contents($this::$aclJSON, json_encode($json_a, JSON_PRETTY_PRINT));
 

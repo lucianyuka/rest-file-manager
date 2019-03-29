@@ -78,7 +78,7 @@ A PHP file manager with a REST interface
     * example: `{"lucian": "cf-rf-uf-df-cu-ru-uu-du", "mohamed": "cf-xx-xx-xx-cu-xx-xx-xx"}`
 * no framework
 * 1-3 php files max (index, functions, class)
-* timeframe: 24 hours
+* timeframe: 2 weeks
 
 ## Some inputs
 
@@ -87,4 +87,4 @@ A PHP file manager with a REST interface
 cd uploads
 mkdir -p {GC01,GC02,GC03,GC04,GC05,GC06,GC16,GC18,GC99}/{readings,notes,past_exam_papers,slides}
 ```
-
+* Documentation on the way...

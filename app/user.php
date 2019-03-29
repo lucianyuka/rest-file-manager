@@ -16,7 +16,7 @@ class User
 
     private static $aclJSON;
 
-    private static $permissions = array(
+    public static $permissions = array(
         "cf" => "create-file",
         "rf" => "read-file",
         "uf" => "update-file",
@@ -93,7 +93,7 @@ class User
     {
         $array = $this->createUsersACL();
 
-        if (array_search(strtolower($user), array_column($array, 'username')) !== false) {
+        if (array_search(convertToLowerCase($user), array_column($array, 'username')) !== false) {
             return true;
         } else {
             return false;
@@ -116,10 +116,10 @@ class User
     {
         $array = $this->createUsersACL();
         foreach ($array as $userperm) {
-            if ($userperm['username'] != strtolower($user)) {
+            if ($userperm['username'] != convertToLowerCase($user)) {
                 continue;
             } else {
-                if ($userperm['username'] == strtolower($user) and in_array_r($perm, $userperm['permissions'])) {
+                if ($userperm['username'] == convertToLowerCase($user) and in_array_r($perm, $userperm['permissions'])) {
                     return true;
                 } else {
                     return false;
