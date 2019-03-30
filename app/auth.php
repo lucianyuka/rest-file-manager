@@ -34,6 +34,13 @@ class Auth
      */
     public function generateToken(string $username): string
     {
+        /*
+        iss: The issuer of the token
+        aud: The audience that the JWT is intended for
+        iat: The timestamp when the JWT was created
+        nbf: A "not process before" timestamp defining an allowed start time for processing
+        exp: A timestamp defining an expiration time (end time) for the token
+         */
         $token = array(
             "iss" => getenv('APP_ISS'),
             "aud" => getenv('APP_AUD'),
@@ -61,7 +68,6 @@ class Auth
     public function validateToken(): bool
     {
         if (isset($_SERVER["HTTP_AUTHORIZATION"])) {
-
             list($type, $data) = array_pad(explode(" ", $_SERVER["HTTP_AUTHORIZATION"], 2), 2, null);
             //list($type, $data) = explode(" ", $_SERVER["HTTP_AUTHORIZATION"], 2);
             if (strcasecmp($type, "Bearer") == 0) {

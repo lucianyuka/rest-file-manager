@@ -71,7 +71,7 @@ class Main
         }
 
         $data = trim($data, "/");
-        $data =filter_path($data);
+        $data = filter_path($data);
         $pathInput = $this::$uploadFolder . DIRECTORY_SEPARATOR . $data;
 
         if (!$this->filesystem->exists($pathInput)) {
@@ -132,9 +132,13 @@ class Main
         }
 
         $this->checkUserAccess("create-file");
+dd(filter_path($_POST['path'], "/"));
+        if (empty($_FILES)) {
+            $this->finalResponse(422, "Missing File Key or Selected File");
+        }
 
-        if (count($_POST) == 0 or count($_FILES) == 0) {
-            $this->finalResponse(422, "Invalid Format");
+        if (empty($_POST)) {
+            $this->finalResponse(422, "Missing Path Key");
         }
 
         if (!array_key_exists("file", $_FILES)) {
@@ -149,13 +153,17 @@ class Main
             $this->finalResponse(412, "Uploading Multiple Files is Not Allowed");
         }
 
+        if (trim($_POST['path'], "/") === "") {
+            $this->finalResponse(422, "Empty Path Not Allowed");
+        }
+
         if (!$_FILES['file']) {
             $this->finalResponse(412, "Missing Property");
         }
 
         $fileInput = $_FILES['file'];
 
-        if(!file_exists($fileInput['tmp_name']) || !is_uploaded_file($fileInput['tmp_name'])) {
+        if (!file_exists($fileInput['tmp_name']) || !is_uploaded_file($fileInput['tmp_name'])) {
             $this->finalResponse(412, "Missing Property");
         }
 
@@ -584,7 +592,7 @@ class Main
         }
 
         $data = trim($data, "/");
-        $data =filter_path($data);
+        $data = filter_path($data);
 
         if (!$this->user->isRegistredUser($data)) {
             $this->finalResponse(400, "Username Not Available");
@@ -600,7 +608,7 @@ class Main
                 foreach ($codes_arr as $key => $val) {
                     foreach ($this->user::$permissions as $code => $permision_string) {
                         if ($val == $code) {
-                            $perm_array[] =  $permision_string;
+                            $perm_array[] = $permision_string;
                         }
                     }
                 }

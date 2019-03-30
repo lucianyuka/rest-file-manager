@@ -77,22 +77,68 @@ if (!function_exists('filter_path')) {
      * @since    v0.0.1
      * @version    v1.0.0    Friday, March 29th, 2019.
      * @param    string    $path
-     * @return    string
+     * @return    array
      */
-    function filter_path(string $path): string
+    function filter_path(string $path): array
     {
-        $path = htmlspecialchars($path); // best to be carefull
-        $path = preg_replace(
-            '~
-            [<>:"\|?*]|            # file system reserved https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
-            [\x00-\x1F]|             # control characters http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx
-            [\x7F\xA0\xAD]|          # non-printing characters DEL, NO-BREAK SPACE, SOFT HYPHEN
-            [#\[\]@!$&\'()+,;=]|     # URI reserved https://tools.ietf.org/html/rfc3986#section-2.2
-            [{}^\~`]                 # URL unsafe characters https://www.ietf.org/rfc/rfc1738.txt
-            ~x',
-            '-', $path);
-        $path = trim($path);
-        return $path;
+        $pattern = '~
+        [<>:"|?*]|            # file system reserved https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
+        [\x00-\x1F]|             # control characters http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx
+        [\x7F\xA0\xAD]|          # non-printing characters DEL, NO-BREAK SPACE, SOFT HYPHEN
+        [#\[\]@!$&%\'()+,;=.]|     # URI reserved https://tools.ietf.org/html/rfc3986#section-2.2
+        [{}^\~`]                 # URL unsafe characters https://www.ietf.org/rfc/rfc1738.txt
+        ~x';
+        $path = preg_replace($pattern, '', $path);
+        $path = stripslashes($path);
+        // $path = trim($path, '/'); // remove space and backslashes from begining and ending
+
+        $path_a = explode('/', $path);
+        $path_a = array_map(function ($val) {return preg_replace('/\s+/', '', $val);}, $path_a);
+
+        function remove_Single_Underscores_Single_Hyphens($str)
+        {
+            /* $aValid = array('-', '_');
+            if (!ctype_alnum(str_replace($aValid, '', $str))) {
+            $str = str_replace(array('-', '_'), '', $str);
+            } */
+            $keywords = preg_split("/[\s-]+/", $str);
+            $filterd = array_filter($keywords, function ($value) {return $value !== '';});
+            $str = implode("-", $filterd);
+
+            $keywords = preg_split("/[\s_]+/", $str);
+            $filterd = array_filter($keywords, function ($value) {return $value !== '';});
+            $str = implode("-", $filterd);
+
+            $str = trim($str, '-');
+
+            return $str;
+        }
+
+        $path_a = array_map("remove_Single_Underscores_Single_Hyphens", $path_a);
+
+        $path_a = array_filter($path_a, function ($value) {return $value !== '';});
+        dd(implode("/", $path_a));
+
+        //$output = array_map(function($val) { return preg_replace('/\s+/', ' ', $val); }, $path_a);
+        /*  foreach ($path_a as $key => $val) {
+        while(substr($val, 0, 1) === "-" or substr($val, 0, 1) === "_") {
+        $val = trim($val,'-');
+        $val = trim($val,'_');
+        }
+        } */
+
+        //$path = preg_replace('/\s*\/\s*/', '/',$path); // remove space before and after evry backslashes within
+        //$path = preg_replace('/\/\//', '/',$path); // remove space before and after evry backslashes within
+        //$path = preg_replace('/\s*-\s*/', '-',$path); // remove space before and after evry backslashes within
+
+        /*  while(substr($path, 0, 1) === "-" or substr($path, 0, 1) === "_") {
+        $path = trim($path,'-');
+        $path = trim($path,'_');
+        } */
+
+        // $path = trim($path,'/'); // remove space and backslashes from begining and ending
+
+        return $path_a;
     }
 
 }
@@ -171,13 +217,13 @@ if (!function_exists('convertToLowerCase')) {
     /**
      * convertToLowerCase.
      *
-     * @author	Mohamed LAMGOUNI <focus3d.ro@gmail.com>
-     * @since	v0.0.1
-     * @version	v1.0.0	Friday, March 29th, 2019.
-     * @param	string	$str
-     * @return	string
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Friday, March 29th, 2019.
+     * @param    string    $str
+     * @return    string
      */
-    function convertToLowerCase(string $str):string
+    function convertToLowerCase(string $str): string
     {
         // lowercase for windows/unix interoperability http://support.microsoft.com/kb/100625
         $str = mb_strtolower($str, mb_detect_encoding($str));
@@ -193,7 +239,7 @@ if (!function_exists('delete')) {
      * @param  string|array  $paths
      * @return bool
      */
-    function delete(string $paths):bool
+    function delete(string $paths): bool
     {
         $paths = is_array($paths) ? $paths : func_get_args();
         $success = true;
