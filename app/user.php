@@ -119,7 +119,7 @@ class User
             if ($userperm['username'] != convertToLowerCase($user)) {
                 continue;
             } else {
-                if ($userperm['username'] == convertToLowerCase($user) and in_array_r($perm, $userperm['permissions'])) {
+                if ($userperm['username'] == convertToLowerCase($user) && in_array_r($perm, $userperm['permissions'])) {
                     return true;
                 } else {
                     return false;

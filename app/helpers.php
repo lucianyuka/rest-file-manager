@@ -1,5 +1,61 @@
 <?php
 
+if (!function_exists('returnHumanReadableBoolean')) {
+    /**
+     * returnHumanReadableBoolean.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Sunday, March 31st, 2019.
+     * @param    bool    $check
+     * @return    string
+     */
+    function returnHumanReadableBoolean(bool $check): string
+    {
+        if ($check) {
+            return "YES";
+        }
+        return "NO";
+    }
+}
+
+if (!function_exists('isAssocArray')) {
+    /**
+     * isAssocArray.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Sunday, March 31st, 2019.
+     * @param    array    $arr
+     * @return    boolean
+     */
+    function isAssocArray(array $arr): bool
+    {
+        if (array() === $arr) {
+            return false;
+        }
+
+        return array_keys($arr) !== range(0, count($arr) - 1);
+    }
+}
+
+if (!function_exists('isArrayOfKeysExists')) {
+    /**
+     * isArrayOfKeysExists.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Sunday, March 31st, 2019.
+     * @param    array    $keys
+     * @param    array    $arr
+     * @return    boolean
+     */
+    function isArrayOfKeysExists(array $keys, array $arr): bool
+    {
+        return !array_diff_key(array_flip($keys), $arr);
+    }
+}
+
 if (!function_exists('getAllHeaders')) {
     /**
      * getAllHeaders.
@@ -69,6 +125,131 @@ if (!function_exists('in_array_r')) {
 
 }
 
+if (!function_exists('hasFileExtension')) {
+    /**
+     * hasFileExtension.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Saturday, March 30th, 2019.
+     * @param    string    $filename
+     * @return    bool
+     */
+    function hasFileExtension(string $filename): bool
+    {
+        if (substr(strrchr($filename, '.'), 1) === "") {
+            return true;
+        }
+        return false;
+    }
+}
+
+if (!function_exists('cleanInputPath')) {
+    /**
+     * cleanInputPath.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Saturday, March 30th, 2019.
+     * @param    string    $path
+     * @return    string
+     */
+    function cleanInputPath(string $path): string
+    {
+        $pattern = '~
+        [<>:"|?*]|            # file system reserved https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
+        [\x00-\x1F]|             # control characters http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx
+        [\x7F\xA0\xAD]|          # non-printing characters DEL, NO-BREAK SPACE, SOFT HYPHEN
+        [#\[\]@!$&%\'()+,;=]|     # URI reserved https://tools.ietf.org/html/rfc3986#section-2.2
+        [{}^\~`]                 # URL unsafe characters https://www.ietf.org/rfc/rfc1738.txt
+        ~x';
+        $path = preg_replace($pattern, '', $path);
+        $path = stripslashes($path);
+        $path = trim($path, '/');
+
+        return $path;
+    }
+}
+
+if (!function_exists('hasPathEndsWithFile')) {
+    /**
+     * hasPathEndsWithFile.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Saturday, March 30th, 2019.
+     * @param    string    $path
+     * @return    boolean
+     */
+    function hasPathEndsWithFile(string $path): bool
+    {
+        $filename = basename($path);
+        // $filename = substr(strrchr($path, "/"), 1);
+
+        $ext = substr(strrchr($filename, '.'), 1);
+
+        if (mb_strlen($ext, 'utf8') !== 3) {
+            return false;
+        }
+        return true;
+
+    }
+}
+
+if (!function_exists('removeFilenameFromPath')) {
+    /**
+     * removeFilenameFromPath.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Saturday, March 30th, 2019.
+     * @param    string    $path
+     * @return    string
+     */
+    function removeFilenameFromPath(string $path): string
+    {
+
+        $filename = basename($path);
+
+        //$filename = substr(strrchr($path, "/"), 1);
+
+        $path = str_replace($filename, '', $path);
+
+        return $path;
+
+    }
+}
+
+if (!function_exists('remove_Single_Underscores_Single_Hyphens')) {
+    /**
+     * remove_Single_Underscores_Single_Hyphens.
+     *
+     * @author    Mohamed LAMGOUNI <focus3d.ro@gmail.com>
+     * @since    v0.0.1
+     * @version    v1.0.0    Saturday, March 30th, 2019.
+     * @param    string    $str
+     * @return    string
+     */
+    function remove_Single_Underscores_Single_Hyphens(string $str): string
+    {
+        $keywords = preg_split("/[\s-]+/", $str);
+        $filterd = array_filter($keywords, function ($value) {return $value !== '';});
+        $str = implode("-", $filterd);
+
+        $keywords = preg_split("/[\s_]+/", $str);
+        $filterd = array_filter($keywords, function ($value) {return $value !== '';});
+        $str = implode("-", $filterd);
+
+        $keywords = preg_split("/[\s.]+/", $str);
+        $filterd = array_filter($keywords, function ($value) {return $value !== '';});
+        $str = implode("-", $filterd);
+
+        $str = trim($str, '-');
+
+        return $str;
+    }
+}
+
 if (!function_exists('filter_path')) {
     /**
      * filter_path.
@@ -77,68 +258,35 @@ if (!function_exists('filter_path')) {
      * @since    v0.0.1
      * @version    v1.0.0    Friday, March 29th, 2019.
      * @param    string    $path
-     * @return    array
+     * @return    string
      */
-    function filter_path(string $path): array
+    function filter_path(string $path): string
     {
-        $pattern = '~
+        /* $pattern = '~
         [<>:"|?*]|            # file system reserved https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
         [\x00-\x1F]|             # control characters http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx
         [\x7F\xA0\xAD]|          # non-printing characters DEL, NO-BREAK SPACE, SOFT HYPHEN
-        [#\[\]@!$&%\'()+,;=.]|     # URI reserved https://tools.ietf.org/html/rfc3986#section-2.2
+        [#\[\]@!$&%\'()+,;=]|     # URI reserved https://tools.ietf.org/html/rfc3986#section-2.2
         [{}^\~`]                 # URL unsafe characters https://www.ietf.org/rfc/rfc1738.txt
         ~x';
         $path = preg_replace($pattern, '', $path);
-        $path = stripslashes($path);
-        // $path = trim($path, '/'); // remove space and backslashes from begining and ending
+        $path = stripslashes($path); */
 
-        $path_a = explode('/', $path);
-        $path_a = array_map(function ($val) {return preg_replace('/\s+/', '', $val);}, $path_a);
-
-        function remove_Single_Underscores_Single_Hyphens($str)
-        {
-            /* $aValid = array('-', '_');
-            if (!ctype_alnum(str_replace($aValid, '', $str))) {
-            $str = str_replace(array('-', '_'), '', $str);
-            } */
-            $keywords = preg_split("/[\s-]+/", $str);
-            $filterd = array_filter($keywords, function ($value) {return $value !== '';});
-            $str = implode("-", $filterd);
-
-            $keywords = preg_split("/[\s_]+/", $str);
-            $filterd = array_filter($keywords, function ($value) {return $value !== '';});
-            $str = implode("-", $filterd);
-
-            $str = trim($str, '-');
-
-            return $str;
+        if (hasPathEndsWithFile($path)) {
+            $path = removeFilenameFromPath($path);
         }
 
-        $path_a = array_map("remove_Single_Underscores_Single_Hyphens", $path_a);
+        $path_arr = explode('/', $path);
 
-        $path_a = array_filter($path_a, function ($value) {return $value !== '';});
-        dd(implode("/", $path_a));
+        $path_arr = array_map(function ($val) {return preg_replace('/\s+/', '', $val);}, $path_arr); // remove spaces
 
-        //$output = array_map(function($val) { return preg_replace('/\s+/', ' ', $val); }, $path_a);
-        /*  foreach ($path_a as $key => $val) {
-        while(substr($val, 0, 1) === "-" or substr($val, 0, 1) === "_") {
-        $val = trim($val,'-');
-        $val = trim($val,'_');
-        }
-        } */
+        $path_arr = array_map("remove_Single_Underscores_Single_Hyphens", $path_arr);
 
-        //$path = preg_replace('/\s*\/\s*/', '/',$path); // remove space before and after evry backslashes within
-        //$path = preg_replace('/\/\//', '/',$path); // remove space before and after evry backslashes within
-        //$path = preg_replace('/\s*-\s*/', '-',$path); // remove space before and after evry backslashes within
+        $path_arr = array_filter($path_arr, function ($value) {return $value !== '';}); //remove empty elements of array
 
-        /*  while(substr($path, 0, 1) === "-" or substr($path, 0, 1) === "_") {
-        $path = trim($path,'-');
-        $path = trim($path,'_');
-        } */
+        $path = implode("/", $path_arr);
 
-        // $path = trim($path,'/'); // remove space and backslashes from begining and ending
-
-        return $path_a;
+        return $path;
     }
 
 }

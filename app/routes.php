@@ -20,8 +20,8 @@ $router->before(
     'GET|POST|PUT|DELETE', '/.*',
     function () use ($auth, $response) {
         if (!$auth->validateToken()) {
-            $response->setStatus(401);
-            $response->setContent('Missing1 or invalid API Key.');
+            $response->setStatus(404); // security do not give hints to potential attackers
+            $response->setContent('Not Found'); // security do not give hints to potential attackers
             $response->finish();
         }
     }

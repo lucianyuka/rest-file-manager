@@ -48,7 +48,7 @@ class Auth
             "nbf" => getenv('APP_NBF'),
             "exp" => time() + 3666600,
             "data" => array(
-                "username" => convertToLowerCase($username),
+                "username" => $username,
             ),
         );
         $jwt = JWT::encode($token, getenv('APP_KEY'));
@@ -78,7 +78,7 @@ class Auth
                     return false;
                 }
                 $username = $decoded->data->username;
-                if (isset($username) and $this->user->isRegistredUser($username)) {
+                if (isset($username) && $this->user->isRegistredUser($username)) {
                     return true;
                 } else {
                     return false;
